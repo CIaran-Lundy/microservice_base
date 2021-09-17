@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: taxid2accession
+  labels:
+    app: taxid2accession
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: taxid2accession
+  template:
+    metadata:
+      labels:
+        app: taxid2accession
+    spec:
+      containers:
+      - name: taxid2accession
+        image: youseq/taxid2accession:latest
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: taxid2accession-file
+          mountPath: /app/taxid2accession
+      volumes:
+      - name: taxid2accession-file
+        hostPath:
+          path: /home/ciaran/taxid2accession/taxid2accession
+          type: FileOrCreate
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: taxid2accession-service
+spec:
+  selector:
+    app: taxid2accession
+  ports:
+  - protocol: TCP
+    port: 8060
+    targetPort: 80
+
