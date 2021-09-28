@@ -26,7 +26,7 @@ spec:
       - name: taxid2accession-file
         hostPath:
           path: /home/ciaran/taxid2accession/taxid2accession
-          type: FileOrCreate
+          type: File
 
 ---
 apiVersion: v1
@@ -38,6 +38,6 @@ spec:
     app: taxid2accession
   ports:
   - protocol: TCP
-    port: 8060
+    port: 80
     targetPort: 80
 
