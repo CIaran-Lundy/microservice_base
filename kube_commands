@@ -1,0 +1,8 @@
+kind delete cluster --name mycluster
+kind create cluster --name mycluster --config config/kind.config.yaml --wait 5m
+kubectl cluster-info --context kind-mycluster
+kubectl apply -f config/kind.config.yaml
+kubectl apply -f config/configmap.yaml
+kubectl apply -f config/frontend.yaml
+kubectl apply -f config/name2taxid.yaml  
+kubectl apply -f config/taxid2accession.yaml
