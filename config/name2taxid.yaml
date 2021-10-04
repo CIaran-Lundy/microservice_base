@@ -25,6 +25,11 @@ spec:
             configMapKeyRef:
               name: qpcr-configmap
               key: taxid2accession_url
+        - name: FRONTEND_URL
+          valueFrom:
+            configMapKeyRef:
+              name: qpcr-configmap
+              key: frontend_url
 ---
 apiVersion: v1
 kind: Service
