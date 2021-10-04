@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: windowgen
+  labels:
+    app: windowgen 
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: windowgen
+  template:
+    metadata:
+      labels:
+        app: windowgen
+    spec:
+      containers:
+      - name: windowgen
+        image: youseq/windowgen:latest
+        ports:
+        - containerPort: 80
+        env:
+        - name: NEXT_SERVICE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: qpcr-configmap
+              key: priorityq_url
+
+        - name: FRONTEND_URL
+          valueFrom:
+            configMapKeyRef:
+              name: qpcr-configmap
+              key: frontend_url
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: windowgen-service
+spec:
+  selector:
+    app: windowgen
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
+
