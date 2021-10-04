@@ -6,3 +6,6 @@ data:
   frontend_url: frontend-service
   taxid2accession_url: taxid2accession-service
   name2taxid_url: name2taxid-service
+  priorityq_url: priorityq-service
+  windowgen_url: windowgen-service
+  complexity_url: complexity-service
