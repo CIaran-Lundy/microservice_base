@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: priorityq
+  labels:
+    app: priorityq 
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: priorityq
+  template:
+    metadata:
+      labels:
+        app: priorityq
+    spec:
+      containers:
+      - name: priorityq
+        image: youseq/priorityq:latest
+        ports:
+        - containerPort: 80
+        env:
+        - name: WINDOW_GEN_URL
+          valueFrom:
+            configMapKeyRef:
+              name: qpcr-configmap
+              key: windowgen_url
+        - name: COMPLEXITY_URL
+          valueFrom:
+            configMapKeyRef:
+              name: qpcr-configmap
+              key: complexity_url
+        - name: FRONTEND_URL
+          valueFrom:
+            configMapKeyRef:
+              name: qpcr-configmap
+              key: frontend_url
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: priorityq-service
+spec:
+  selector:
+    app: priorityq
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
+
