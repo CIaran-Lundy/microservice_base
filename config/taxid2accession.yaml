@@ -19,6 +19,17 @@ spec:
         image: youseq/taxid2accession:latest
         ports:
         - containerPort: 80
+        env:
+        - name: NEXT_SERVICE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: qpcr-configmap
+              key: priorityq_url
+        - name: FRONTEND_URL
+          valueFrom:
+            configMapKeyRef:
+              name: qpcr-configmap
+              key: frontend_url
         volumeMounts:
         - name: taxid2accession-file
           mountPath: /app/taxid2accession
