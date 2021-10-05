@@ -25,12 +25,18 @@ spec:
             configMapKeyRef:
               name: qpcr-configmap
               key: priorityq_url
-
         - name: FRONTEND_URL
           valueFrom:
             configMapKeyRef:
               name: qpcr-configmap
               key: frontend_url
+        volumeMounts:
+        - name: nt-volume
+          mountPath: /home/ciaran/nt
+      volumes:
+      - name: nt-volume
+        persistentVolumeClaim:
+          claimName: nt-pvc
 
 ---
 apiVersion: v1
