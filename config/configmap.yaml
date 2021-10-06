@@ -9,3 +9,4 @@ data:
   priorityq_url: priorityq-service
   windowgen_url: windowgen-service
   complexity_url: complexity-service
+  blastsearcher_url: blastsearcher-service

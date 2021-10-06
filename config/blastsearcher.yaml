@@ -1,54 +1,51 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: priorityq
+  name: blastsearcher
   labels:
-    app: priorityq 
+    app: blastsearcher
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: priorityq
+      app: blastsearcher
   template:
     metadata:
       labels:
-        app: priorityq
+        app: blastsearcher
     spec:
       containers:
-      - name: priorityq
-        image: youseq/priorityq:latest
+      - name: blastsearcher
+        image: youseq/blastsearcher:latest
         ports:
         - containerPort: 80
         env:
-        - name: WINDOW_GEN_URL
+        - name: NEXT_SERVICE_URL
           valueFrom:
             configMapKeyRef:
               name: qpcr-configmap
-              key: windowgen_url
-        - name: COMPLEXITY_URL
-          valueFrom:
-            configMapKeyRef:
-              name: qpcr-configmap
-              key: complexity_url
-        - name: BLAST_SEARCHER_URL
-          valueFrom:
-            configMapKeyRef:
-              name: qpcr-configmap
-              key: blastsearcher_url
+              key: priorityq_url
         - name: FRONTEND_URL
           valueFrom:
             configMapKeyRef:
               name: qpcr-configmap
               key: frontend_url
+        volumeMounts:
+        - name: nt-volume
+          mountPath: /home/ciaran/nt
+      volumes:
+      - name: nt-volume
+        persistentVolumeClaim:
+          claimName: nt-pvc
 
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: priorityq-service
+  name: blastsearcher-service
 spec:
   selector:
-    app: priorityq
+    app: blastsearcher
   ports:
   - protocol: TCP
     port: 80
