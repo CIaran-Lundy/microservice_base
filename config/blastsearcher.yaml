@@ -5,7 +5,7 @@ metadata:
   labels:
     app: blastsearcher
 spec:
-  replicas: 1
+  replicas: 3
   selector:
     matchLabels:
       app: blastsearcher
@@ -24,7 +24,7 @@ spec:
           valueFrom:
             configMapKeyRef:
               name: qpcr-configmap
-              key: priorityq_url
+              key: msaaligner_url
         - name: FRONTEND_URL
           valueFrom:
             configMapKeyRef:
