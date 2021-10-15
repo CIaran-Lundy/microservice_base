@@ -10,3 +10,5 @@ data:
   windowgen_url: windowgen-service
   complexity_url: complexity-service
   blastsearcher_url: blastsearcher-service
+  msaaligner_url: msaaligner-service
+  includesexcludes_url: includesexcludes-service
