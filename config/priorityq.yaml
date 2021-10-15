@@ -35,6 +35,16 @@ spec:
             configMapKeyRef:
               name: qpcr-configmap
               key: blastsearcher_url
+        - name: MSA_ALIGNER_URL
+          valueFrom:
+            configMapKeyRef:
+              name: qpcr-configmap
+              key: msaaligner_url
+        - name: INCLUDESEXCLUDES_URL
+          valueFrom:
+            configMapKeyRef:
+              name: qpcr-configmap
+              key: includesexcludes_url
         - name: FRONTEND_URL
           valueFrom:
             configMapKeyRef:
