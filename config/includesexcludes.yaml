@@ -24,7 +24,7 @@ spec:
           valueFrom:
             configMapKeyRef:
               name: qpcr-configmap
-              key: priorityq_url
+              key: pdd_url
         - name: FRONTEND_URL
           valueFrom:
             configMapKeyRef:
