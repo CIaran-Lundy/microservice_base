@@ -12,3 +12,5 @@ data:
   blastsearcher_url: blastsearcher-service
   msaaligner_url: msaaligner-service
   includesexcludes_url: includesexcludes-service
+  pdd_url: pdd-service
+  kitselector_url: kitselector-service
