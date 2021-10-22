@@ -45,6 +45,11 @@ spec:
             configMapKeyRef:
               name: qpcr-configmap
               key: includesexcludes_url
+        - name: KIT_SELECTOR_URL
+          valueFrom:
+            configMapKeyRef:
+              name: qpcr-configmap
+              key: kitselector_url
         - name: FRONTEND_URL
           valueFrom:
             configMapKeyRef:
