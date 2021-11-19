@@ -13,4 +13,4 @@ kubectl apply -f config/complexity.yaml
 kubectl apply -f config/blastsearcher.yaml
 kubectl apply -f config/msa_aligner.yaml
 kubectl apply -f config/includesexcludes.yaml
-
+kubectl apply -f config/pdd.yaml
