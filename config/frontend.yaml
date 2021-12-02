@@ -24,7 +24,16 @@ spec:
           valueFrom:
             configMapKeyRef:
               name: qpcr-configmap
-              key: name2taxid_url
+              key: msaaligner_url
+        volumeMounts:
+        - name: pathways-file
+          mountPath: /pathways/pathways.json
+      volumes:
+      - name: pathways-file
+        hostPath:
+          path: /home/ciaran/qpcr_service/pathways.json
+          type: File
+
 ---
 apiVersion: v1
 kind: Service
