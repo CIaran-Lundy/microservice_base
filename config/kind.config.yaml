@@ -10,7 +10,11 @@ nodes:
   extraMounts:
   - hostPath: /home/ciaran/taxid2accession/taxid2accession 
     containerPath: /home/ciaran/taxid2accession/taxid2accession
+  - hostPath: /home/ciaran/qpcr_service/pathways.json
+    containerPath: /home/ciaran/qpcr_service/pathways.json
 - role: worker
   extraMounts:
   - hostPath: /home/ciaran/taxid2accession/taxid2accession
     containerPath: /home/ciaran/taxid2accession/taxid2accession
+  - hostPath: /home/ciaran/qpcr_service/pathways.json
+    containerPath: /home/ciaran/qpcr_service/pathways.json
