@@ -7,6 +7,7 @@ kubectl apply -f config/configmap.yaml
 kubectl apply -f config/frontend.yaml
 kubectl apply -f config/name2taxid.yaml  
 kubectl apply -f config/taxid2accession.yaml
+kubectl apply -f config/clusterservice.yaml
 kubectl apply -f config/priorityq.yaml
 kubectl apply -f config/windowgen.yaml
 kubectl apply -f config/complexity.yaml
@@ -14,3 +15,4 @@ kubectl apply -f config/blastsearcher.yaml
 kubectl apply -f config/msa_aligner.yaml
 kubectl apply -f config/includesexcludes.yaml
 kubectl apply -f config/pdd.yaml
+kubectl apply -f config/kitselector.yaml
