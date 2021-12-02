@@ -1,0 +1,19 @@
+{
+	"pdd_singleplex": [
+				"http://name2taxid-service",
+				"http://taxid2accession-service/",
+				"http://clusterservice-service/",
+				"http://priorityq-service/sequential/",
+				"http://windowgen-service/",
+				"http://priorityq-service/sequential_set/",
+				"http://complexity-service/",
+				"http://priorityq-service/complexity_priority/",
+				"http://blastsearcher-service/",
+				"http://msaaligner-service/",
+				"http://includesexcludes-service/",
+				"http://pdd-service/",
+				"http://priorityq-service/kit_selector_sequential/",
+				"http://kitselector-service/",
+				"http://frontend/finished_designs/"
+	]
+}

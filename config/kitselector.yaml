@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kitselector
+  labels:
+    app: kitselector
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kitselector
+  template:
+    metadata:
+      labels:
+        app: kitselector
+    spec:
+      containers:
+      - name: pdd
+        image: youseq/kitselector:latest
+        ports:
+        - containerPort: 80
+        env:
+        - name: NEXT_SERVICE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: qpcr-configmap
+              key: priorityq_url
+        - name: FRONTEND_URL
+          valueFrom:
+            configMapKeyRef:
+              name: qpcr-configmap
+              key: frontend_url
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kitselector-service
+spec:
+  selector:
+    app: kitselector
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
+
