@@ -9,6 +9,7 @@
 				"http://complexity-service/",
 				"http://priorityq-service/complexity_priority/",
 				"http://blastsearcher-service/",
+				"http://blastdbcreator-service/",
 				"http://msaaligner-service/",
 				"http://includesexcludes-service/",
 				"http://pdd-service/",
