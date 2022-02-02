@@ -1,14 +1,13 @@
 {
 	"pdd_singleplex": [
-				"http://name2taxid-service",
-				"http://taxid2accession-service/",
+				"http://datafinder-service/",
 				"http://clusterservice-service/",
 				"http://priorityq-service/sequential/",
 				"http://windowgen-service/",
 				"http://priorityq-service/sequential_set/",
 				"http://complexity-service/",
 				"http://priorityq-service/complexity_priority/",
-				"http://blastsearcher-service/",
+				"http://nt-blastmanager-service/",
 				"http://blastdbcreator-service/",
 				"http://msaaligner-service/",
 				"http://includesexcludes-service/",
