@@ -11,17 +11,10 @@ import asyncio
 import queue
 
 
-FRONT_END_URL = str("http://" + os.getenv("FRONTEND_URL") + "/log/")
-
-
 app = FastAPI()
 
-
 sequential_queue = asyncio.Queue(maxsize=0)
-sequential_queue_thread = SequentialQueueThread(FRONT_END_URL=FRONT_END_URL, intake_q=sequential_queue)
-sequential_queue_thread.start()
 
-kill_list = []
 
 @app.post("/")
 async def run(input: Input):
@@ -47,3 +40,13 @@ def process(input: Input):
 #    global kill_list
 #    kill_list.append(design_id)
 #    return HTMLResponse(content="ready", status_code=200)
+
+
+if __name__ == "__main__":
+
+    FRONT_END_URL = str("http://" + os.getenv("FRONTEND_URL") + "/log/")
+
+    sequential_queue_thread = SequentialQueueThread(FRONT_END_URL=FRONT_END_URL, intake_q=sequential_queue)
+    sequential_queue_thread.start()
+
+    kill_list = []
