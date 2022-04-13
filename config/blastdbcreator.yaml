@@ -5,7 +5,7 @@ metadata:
   labels:
     app: blastdbcreator
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: blastdbcreator
@@ -17,6 +17,10 @@ spec:
       containers:
       - name: blastdbcreator
         image: youseq/blastdbcreator:latest
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "1000m"
         ports:
         - containerPort: 80
         env:
