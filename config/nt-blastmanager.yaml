@@ -1,37 +1,45 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: taxid2accession
+  name: nt-blastmanager
   labels:
-    app: taxid2accession
+    app: nt-blastmanager
 spec:
+  replicas: 1
   selector:
     matchLabels:
-      app: taxid2accession
+      app: nt-blastmanager
   template:
     metadata:
       labels:
-        app: taxid2accession
+        app: nt-blastmanager
     spec:
       containers:
-      - name: taxid2accession
-        image: youseq/taxid2accession:latest
+      - name: nt-blastmanager
+        image: youseq/blastmanager3:latest
+        #resources:
+                #requests:
+                  #memory: "1000Mi"
+            #cpu: "1000m"
         ports:
         - containerPort: 80
         env:
-        - name: NEXT_SERVICE_URL
-          valueFrom:
-            configMapKeyRef:
-              name: qpcr-configmap
-              key: priorityq_url
         - name: FRONTEND_URL
           valueFrom:
             configMapKeyRef:
               name: qpcr-configmap
               key: frontend_url
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: NUMBER_OF_REPLICAS
+          value: "1"
+        - name: POD_TYPE
+          value: nt
         volumeMounts:
         - name: nt-volume
-          mountPath: /home/ciaran/nt/
+          mountPath: /home/ciaran/nt
       volumes:
       - name: nt-volume
         persistentVolumeClaim:
@@ -42,12 +50,11 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: taxid2accession-service
+  name: nt-blastmanager-service
 spec:
   selector:
-    app: taxid2accession
+    app: nt-blastmanager
   ports:
   - protocol: TCP
     port: 80
     targetPort: 80
-

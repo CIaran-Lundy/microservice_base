@@ -1,21 +1,22 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: taxid2accession
+  name: lineageservice
   labels:
-    app: taxid2accession
+    app: lineageservice
 spec:
+  replicas: 1
   selector:
     matchLabels:
-      app: taxid2accession
+      app: lineageservice
   template:
     metadata:
       labels:
-        app: taxid2accession
+        app: lineageservice
     spec:
       containers:
-      - name: taxid2accession
-        image: youseq/taxid2accession:latest
+      - name: lineageservice
+        image: youseq/lineageservice:latest
         ports:
         - containerPort: 80
         env:
@@ -31,23 +32,20 @@ spec:
               key: frontend_url
         volumeMounts:
         - name: nt-volume
-          mountPath: /home/ciaran/nt/
+          mountPath: /home/ciaran/nt
       volumes:
       - name: nt-volume
         persistentVolumeClaim:
           claimName: nt-pvc
-
-
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: taxid2accession-service
+  name: lineageservice-service
 spec:
   selector:
-    app: taxid2accession
+    app: lineageservice
   ports:
   - protocol: TCP
     port: 80
     targetPort: 80
-

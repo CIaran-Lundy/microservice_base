@@ -5,7 +5,7 @@ metadata:
   labels:
     app: windowgen 
 spec:
-  replicas: 1
+  replicas: 4
   selector:
     matchLabels:
       app: windowgen
@@ -37,7 +37,6 @@ spec:
       - name: nt-volume
         persistentVolumeClaim:
           claimName: nt-pvc
-
 ---
 apiVersion: v1
 kind: Service
@@ -50,4 +49,16 @@ spec:
   - protocol: TCP
     port: 80
     targetPort: 80
+---
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: windowgen-vpa
+spec:
+  targetRef:
+    apiVersion: "apps/v1"
+    kind: Deployment
+    name: windowgen
+  updatePolicy:
+    updateMode:  Recreate
 
