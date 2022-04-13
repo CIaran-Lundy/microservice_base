@@ -15,7 +15,7 @@ spec:
         app: kitselector
     spec:
       containers:
-      - name: pdd
+      - name: kitselector
         image: youseq/kitselector:latest
         ports:
         - containerPort: 80
@@ -30,6 +30,14 @@ spec:
             configMapKeyRef:
               name: qpcr-configmap
               key: frontend_url
+        volumeMounts:
+        - name: nt-volume
+          mountPath: /home/ciaran/nt
+      volumes:
+      - name: nt-volume
+        persistentVolumeClaim:
+          claimName: nt-pvc
+
 ---
 apiVersion: v1
 kind: Service
