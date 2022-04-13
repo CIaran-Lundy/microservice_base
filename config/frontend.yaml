@@ -28,8 +28,8 @@ spec:
         volumeMounts:
         - name: nt-volume
           mountPath: /home/ciaran/nt
-        - name: pathways-file
-          mountPath: /pathways/pathways.json
+          #        - name: pathways-file
+          #mountPath: /pathways/pathways.json
       volumes:
 #      - name: pathways-file
 #        hostPath:
