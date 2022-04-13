@@ -1,4 +1,5 @@
 {
+<<<<<<< HEAD
         "pdd_singleplex": [
                                 "http://datafinder-service/",
                                 "http://clusterservice-service/",
@@ -16,4 +17,23 @@
                                 "http://kitselector-service/",
                                 "http://frontend/finished_designs/"
         ]
+=======
+	"pdd_singleplex": [
+				"http://datafinder-service/",
+				"http://clusterservice-service/",
+				"http://priorityq-service/sequential/",
+				"http://windowgen-service/",
+				"http://priorityq-service/sequential_set/",
+				"http://complexity-service/",
+				"http://priorityq-service/complexity_priority/",
+				"http://nt-blastmanager-service/",
+				"http://blastdbcreator-service/",
+				"http://msaaligner-service/",
+				"http://includesexcludes-service/",
+				"http://pdd-service/",
+				"http://priorityq-service/kit_selector_sequential/",
+				"http://kitselector-service/",
+				"http://frontend/finished_designs/"
+	]
+>>>>>>> 6c5f70e67407c4a2a83c23a418f5b23b269f8837
 }
