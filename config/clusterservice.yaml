@@ -17,6 +17,10 @@ spec:
       containers:
       - name: windowgen
         image: youseq/clusterservice:latest
+        #resources:
+        #  requests:
+        #    memory: "1Gi"
+        #    cpu: "1000m"
         ports:
         - containerPort: 80
         env:
@@ -50,4 +54,15 @@ spec:
   - protocol: TCP
     port: 80
     targetPort: 80
-
+---
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: clusterservice-vpa
+spec:
+  targetRef:
+    apiVersion: "apps/v1"
+    kind: Deployment
+    name: clusterservice
+  updatePolicy: 
+    updateMode:  Recreate
