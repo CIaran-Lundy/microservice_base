@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: datafinder
+  labels:
+    app: datafinder
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: datafinder
+  template:
+    metadata:
+      labels:
+        app: datafinder
+    spec:
+      containers:
+      - name: datafinder
+        image: youseq/datafinder:v1.0.0
+        imagePullPolicy: Always
+        resources:
+          requests:
+            memory: "50Mi"
+            cpu: "1000m"
+        ports:
+        - containerPort: 80
+        env:
+        - name: EXCHANGE_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: qpcr-configmap
+              key: exchange_name
+        - name: RABBITMQ_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: qpcr-configmap
+              key: rabbitmq_host
+        - name: RABBITMQ_USER
+          valueFrom:
+            configMapKeyRef:
+              name: qpcr-configmap
+              key: rabbitmq_user
+        - name: RABBITMQ_PASSWORD
+          valueFrom:
+            configMapKeyRef:
+              name: qpcr-configmap
+              key: rabbitmq_password
+        - name: RABBITMQ_LISTEN_QUEUE
+          value: datafinder
+        - name: FRONTEND_URL
+          valueFrom:
+            configMapKeyRef:
+              name: qpcr-configmap
+              key: frontend_url
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: datafinder-service
+spec:
+  selector:
+    app: datafinder
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
+---
+#apiVersion: autoscaling.k8s.io/v1
+#kind: VerticalPodAutoscaler
+#metadata:
+#  name: datafinder-vpa
+#spec:
+#  targetRef:
+#    apiVersion: "apps/v1"
+#    kind: Deployment
+#    name: datafinder
+#  updatePolicy:
+#    updateMode:  Recreate

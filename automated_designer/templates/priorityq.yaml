@@ -1,0 +1,93 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: priorityq
+  labels:
+    app: priorityq 
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: priorityq
+  template:
+    metadata:
+      labels:
+        app: priorityq
+    spec:
+#      tolerations:
+#      - key: "MasterNodeService"
+#        value: "True"
+#        operator: "Equal"
+#        effect: "NoSchedule"
+#      nodeName: 'handforth-pc-clerk'
+      containers:
+      - name: priorityq
+        image: youseq/priorityq:latest
+        resources:
+          requests:
+            memory: "200Mi"
+            cpu: "100m"
+
+        ports:
+        - containerPort: 80
+        env:
+        - name: WINDOW_GEN_URL
+          valueFrom:
+            configMapKeyRef:
+              name: qpcr-configmap
+              key: windowgen_url
+        - name: COMPLEXITY_URL
+          valueFrom:
+            configMapKeyRef:
+              name: qpcr-configmap
+              key: complexity_url
+        - name: BLAST_SEARCHER_URL
+          valueFrom:
+            configMapKeyRef:
+              name: qpcr-configmap
+              key: blastsearcher_url
+        - name: MSA_ALIGNER_URL
+          valueFrom:
+            configMapKeyRef:
+              name: qpcr-configmap
+              key: msaaligner_url
+        - name: INCLUDESEXCLUDES_URL
+          valueFrom:
+            configMapKeyRef:
+              name: qpcr-configmap
+              key: includesexcludes_url
+        - name: KIT_SELECTOR_URL
+          valueFrom:
+            configMapKeyRef:
+              name: qpcr-configmap
+              key: kitselector_url
+        - name: FRONTEND_URL
+          valueFrom:
+            configMapKeyRef:
+              name: qpcr-configmap
+              key: frontend_url
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: priorityq-service
+spec:
+  selector:
+    app: priorityq
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
+---
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: priorityq-vpa
+spec:
+  targetRef:
+    apiVersion: "apps/v1"
+    kind: Deployment
+    name: priorityq
+  updatePolicy:
+    updateMode:  Recreate

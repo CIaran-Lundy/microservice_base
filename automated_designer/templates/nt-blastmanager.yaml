@@ -1,0 +1,82 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nt-blastmanager
+  labels:
+    app: nt-blastmanager
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nt-blastmanager
+  template:
+    metadata:
+      labels:
+        app: nt-blastmanager
+    spec:
+      containers:
+      - name: nt-blastmanager
+        image: youseq/blastmanager3:latest
+        #resources:
+                #requests:
+                  #memory: "1000Mi"
+            #cpu: "1000m"
+        ports:
+        - containerPort: 80
+        env:
+        - name: EXCHANGE_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: qpcr-configmap
+              key: exchange_name
+        - name: RABBITMQ_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: qpcr-configmap
+              key: rabbitmq_host
+        - name: RABBITMQ_USER
+          valueFrom:
+            configMapKeyRef:
+              name: qpcr-configmap
+              key: rabbitmq_user
+        - name: RABBITMQ_PASSWORD
+          valueFrom:
+            configMapKeyRef:
+              name: qpcr-configmap
+              key: rabbitmq_password
+        - name: RABBITMQ_LISTEN_QUEUE
+          value: nt-blastmanager
+        - name: FRONTEND_URL
+          valueFrom:
+            configMapKeyRef:
+              name: qpcr-configmap
+              key: frontend_url
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: NUMBER_OF_REPLICAS
+          value: "1"
+        - name: POD_TYPE
+          value: nt
+        volumeMounts:
+        - name: nt-volume
+          mountPath: /home/ciaran/nt
+      volumes:
+      - name: nt-volume
+        persistentVolumeClaim:
+          claimName: nt-pvc
+
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nt-blastmanager-service
+spec:
+  selector:
+    app: nt-blastmanager
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80

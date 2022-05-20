@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kitselector
+  labels:
+    app: kitselector
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kitselector
+  template:
+    metadata:
+      labels:
+        app: kitselector
+    spec:
+      containers:
+      - name: kitselector
+        image: youseq/kitselector:latest
+        ports:
+        - containerPort: 80
+        env:
+        - name: EXCHANGE_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: qpcr-configmap
+              key: exchange_name
+        - name: RABBITMQ_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: qpcr-configmap
+              key: rabbitmq_host
+        - name: RABBITMQ_USER
+          valueFrom:
+            configMapKeyRef:
+              name: qpcr-configmap
+              key: rabbitmq_user
+        - name: RABBITMQ_PASSWORD
+          valueFrom:
+            configMapKeyRef:
+              name: qpcr-configmap
+              key: rabbitmq_password
+        - name: RABBITMQ_LISTEN_QUEUE
+          value: kitselector
+        - name: NEXT_SERVICE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: qpcr-configmap
+              key: priorityq_url
+        - name: FRONTEND_URL
+          valueFrom:
+            configMapKeyRef:
+              name: qpcr-configmap
+              key: frontend_url
+        volumeMounts:
+        - name: nt-volume
+          mountPath: /home/ciaran/nt
+      volumes:
+      - name: nt-volume
+        persistentVolumeClaim:
+          claimName: nt-pvc
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kitselector-service
+spec:
+  selector:
+    app: kitselector
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
+

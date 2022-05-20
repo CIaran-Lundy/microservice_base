@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: qpcr-configmap
+data:
+  frontend_url: frontend-service
+  taxid2accession_url: taxid2accession-service
+  name2taxid_url: name2taxid-service
+  priorityq_url: priorityq-service
+  windowgen_url: windowgen-service
+  complexity_url: complexity-service
+  blastsearcher_url: family-blastsearcher-service
+  msaaligner_url: msaaligner-service
+  includesexcludes_url: includesexcludes-service
+  pdd_url: pdd-service
+  kitselector_url: kitselector-service
+  nt_filename: /home/ciaran/nt/nt/FASTA/nt
+  exchange_name: qpcr_design_tool
+  rabbitmq_host: rabbitmq-cluster 
+  rabbitmq_user: default_user_oUvQ8n-vJq4NRdopc1r
+  rabbitmq_password: DKsZDHop1OwwAh4i8h3l-HGs9P142Z7w

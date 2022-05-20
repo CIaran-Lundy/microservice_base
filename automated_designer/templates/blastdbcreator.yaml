@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: blastdbcreator
+  labels:
+    app: blastdbcreator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: blastdbcreator
+  template:
+    metadata:
+      labels:
+        app: blastdbcreator
+    spec:
+      containers:
+      - name: blastdbcreator
+        image: youseq/blastdbcreator:latest
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "1000m"
+        ports:
+        - containerPort: 80
+        env:
+        - name: NEXT_SERVICE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: qpcr-configmap
+              key: includesexcludes_url
+        - name: FRONTEND_URL
+          valueFrom:
+            configMapKeyRef:
+              name: qpcr-configmap
+              key: frontend_url
+        volumeMounts:
+        - name: nt-volume
+          mountPath: /home/ciaran/nt
+      volumes:
+      - name: nt-volume
+        persistentVolumeClaim:
+          claimName: nt-pvc
+
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: blastdbcreator-service
+spec:
+  selector:
+    app: blastdbcreator
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80

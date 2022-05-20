@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: includesexcludes
+  labels:
+    app: includesexcludes
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: includesexcludes
+  template:
+    metadata:
+      labels:
+        app: includesexcludes
+    spec:
+      containers:
+      - name: includesexcludes
+        image: youseq/includesexcludes:latest
+        ports:
+        - containerPort: 80
+        env:
+        - name: EXCHANGE_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: qpcr-configmap
+              key: exchange_name
+        - name: RABBITMQ_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: qpcr-configmap
+              key: rabbitmq_host
+        - name: RABBITMQ_USER
+          valueFrom:
+            configMapKeyRef:
+              name: qpcr-configmap
+              key: rabbitmq_user
+        - name: RABBITMQ_PASSWORD
+          valueFrom:
+            configMapKeyRef:
+              name: qpcr-configmap
+              key: rabbitmq_password
+        - name: RABBITMQ_LISTEN_QUEUE
+          value: includesexcludes
+        - name: NEXT_SERVICE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: qpcr-configmap
+              key: pdd_url
+        - name: FRONTEND_URL
+          valueFrom:
+            configMapKeyRef:
+              name: qpcr-configmap
+              key: frontend_url
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: includesexcludes-service
+spec:
+  selector:
+    app: includesexcludes
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
+
