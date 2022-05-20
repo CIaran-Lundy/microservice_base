@@ -1,6 +1,6 @@
 FROM tiangolo/uvicorn-gunicorn-fastapi:latest
 
-RUN pip install requests
+RUN pip install requests aiormq pika
 
 COPY ./app /app
 

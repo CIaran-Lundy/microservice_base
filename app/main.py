@@ -5,15 +5,176 @@ import os
 from pydantic import BaseModel
 from service import Input
 from service import Service
-from queue_thread import SequentialQueueThread
+from queue_thread import SequentialQueueThread, RabbitMQThread
 import threading
 import asyncio
 import queue
+import aiormq
+from base64 import b64encode, b64decode
+import os
+import asyncio
+import threading
+from pydantic import BaseModel
+from typing import Dict
+from fastapi import FastAPI
+from fastapi.responses import HTMLResponse
+import requests
+from service import Input
+from service import Service
+import asyncio
+import aiormq
+import json
+from base64 import b64encode, b64decode
+
+from aiormq.abc import DeliveredMessage
+import pika
+
+import os
 
 
 app = FastAPI()
 
 sequential_queue = asyncio.Queue(maxsize=0)
+
+exchange_name = os.environ.get("EXCHANGE_NAME")
+rabbitmq_host = os.environ.get("RABBITMQ_HOST")
+rabbitmq_user = os.environ.get("RABBITMQ_USER")
+rabbitmq_password = os.environ.get("RABBITMQ_PASSWORD")
+
+#async def consume():
+
+#    exchange_name = os.environ.get("EXCHANGE_NAME")
+#    rabbitmq_host = os.environ.get("RABBITMQ_HOST")
+#    rabbitmq_user = os.environ.get("RABBITMQ_USER")
+#    rabbitmq_password = os.environ.get("RABBITMQ_PASSWORD")
+
+#    connection = await aiormq.connect(f"amqp://{rabbitmq_user}:{rabbitmq_password}@{rabbitmq_host}/")
+#    channel = await connection.channel()
+
+    #await channel.basic_qos(prefetch_count=1)
+
+    #await channel.exchange_declare(
+    #    exchange=exchange_name, exchange_type='direct'
+    #)
+
+    #declare = await channel.queue_declare(durable=True, auto_delete=True)
+    #await channel.queue_bind(declare.queue, exchange_name, routing_key='clusterservice')
+
+    #await channel.basic_consume(declare.queue, SequentialQueueThread.process)
+
+    #print("I DID SOMETHING!")
+
+#def main():
+#    credentials = pika.PlainCredentials(username=rabbitmq_user, password=rabbitmq_password)
+#    connection = pika.BlockingConnection(pika.ConnectionParameters(host=rabbitmq_host, credentials=credentials))
+#    channel = connection.channel()#
+
+#    channel.queue_declare(queue='clusterservice')
+
+#    def callback(ch, method, properties, body):
+#        print(" [x] Received %r" % body)
+#        print(" [x] Done")
+#        ch.basic_ack(delivery_tag=method.delivery_tag)
+
+#    channel.basic_consume(queue='clusterservice', on_message_callback=callback, auto_ack=True)
+
+#    print(' [*] Waiting for messages. To exit press CTRL+C')
+#    channel.start_consuming()
+
+
+#if __name__ == '__main__':
+#    main()
+
+class RabbitBody:
+    fibo: int
+
+    def __init__(self, fibo):
+        self.fibo = fibo
+
+    def encode(self):
+        dicc = {"fibo": self.fibo}
+        return b64encode(json.dumps(dicc).encode())
+
+    @staticmethod
+    def decode(encoded):
+        dicc = json.loads(b64decode(encoded))
+        fibo = dicc["fibo"]
+        return RabbitBody(fibo)
+
+
+if __name__ == "__main__":
+    import pika
+
+    exchange_name = os.environ.get("EXCHANGE_NAME")
+    rabbitmq_host = os.environ.get("RABBITMQ_HOST")
+    rabbitmq_user = os.environ.get("RABBITMQ_USER")
+    rabbitmq_password = os.environ.get("RABBITMQ_PASSWORD")
+
+    def on_callback(msg):
+        print(msg)
+
+
+    params = pika.ConnectionParameters(
+        host=rabbitmq_host,
+        port=5672,
+        credentials=pika.credentials.PlainCredentials(username=rabbitmq_user, password=rabbitmq_password),
+    )
+
+    # Open a connection to RabbitMQ on localhost using all default parameters
+    connection = pika.BlockingConnection(parameters=params)
+
+    # Open the channel
+    channel = connection.channel()
+
+    # Declare the queue
+    channel.queue_declare(
+        #callback=on_callback,
+        queue="clusterservice",
+        durable=True,
+        exclusive=False,
+        auto_delete=False
+    )
+
+    channel.basic_publish(exchange='', routing_key='clusterservice', body=b'hello world')
+
+    # ...
+
+    # Re-declare the queue with passive flag
+    res = channel.queue_declare(
+        #callback=on_callback,
+        queue="test",
+        durable=True,
+        exclusive=False,
+        auto_delete=False,
+        passive=True
+    )
+    print(f'Messages in queue: {res.method.message_count}')
+
+    params = pika.ConnectionParameters(
+        host=rabbitmq_host,
+        port=5672,
+        credentials=pika.credentials.PlainCredentials(username=rabbitmq_user, password=rabbitmq_password),
+    )
+
+    # Open a connection to RabbitMQ on localhost using all default parameters
+    connection = pika.BlockingConnection(parameters=params)
+    channel = connection.channel()
+
+    #channel.queue_declare(queue='test')
+
+
+    def callback(ch, method, properties, body):
+        print(" [x] Received %r" % body)
+
+
+    channel.basic_consume(queue='test', on_message_callback=callback, auto_ack=True)
+
+    print(' [*] Waiting for messages. To exit press CTRL+C')
+    channel.start_consuming()
+
+    #loop = asyncio.get_event_loop()
+    #loop.run_until_complete(consume())
+    #loop.run_forever()
 
 
 @app.post("/")
@@ -42,11 +203,14 @@ def process(input: Input):
 #    return HTMLResponse(content="ready", status_code=200)
 
 
-if __name__ == "__main__":
+#if __name__ == "__main__":
 
-    FRONT_END_URL = str("http://" + os.getenv("FRONTEND_URL") + "/log/")
+FRONT_END_URL = str("http://" + os.getenv("FRONTEND_URL") + "/log/")
 
-    sequential_queue_thread = SequentialQueueThread(FRONT_END_URL=FRONT_END_URL, intake_q=sequential_queue)
-    sequential_queue_thread.start()
+sequential_queue_thread = SequentialQueueThread(FRONT_END_URL=FRONT_END_URL, intake_q=sequential_queue)
+sequential_queue_thread.start()
 
-    kill_list = []
+rabbitmq_thread = RabbitMQThread(FRONT_END_URL=FRONT_END_URL)
+rabbitmq_thread.start()
+
+kill_list = []
