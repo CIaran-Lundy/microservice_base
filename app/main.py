@@ -42,11 +42,9 @@ def process(input: Input):
 #    return HTMLResponse(content="ready", status_code=200)
 
 
-if __name__ == "__main__":
+FRONT_END_URL = str("http://" + os.getenv("FRONTEND_URL") + "/log/")
 
-    FRONT_END_URL = str("http://" + os.getenv("FRONTEND_URL") + "/log/")
+sequential_queue_thread = SequentialQueueThread(FRONT_END_URL=FRONT_END_URL, intake_q=sequential_queue)
+sequential_queue_thread.start()
 
-    sequential_queue_thread = SequentialQueueThread(FRONT_END_URL=FRONT_END_URL, intake_q=sequential_queue)
-    sequential_queue_thread.start()
-
-    kill_list = []
+kill_list = []
