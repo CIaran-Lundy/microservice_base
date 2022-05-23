@@ -40,7 +40,7 @@ class SequentialQueueThread(threading.Thread):
         return HTMLResponse(content="ready", status_code=200)
 
     def process(self, input: Input):
-        #NEXT_SERVICE_URL = input.pathway[0]
+        NEXT_SERVICE_URL = input.pathway[0]
         service = Service(input)
         log_response = requests.post(self.FRONT_END_URL, json=service.get_status_update())
         output = service.run(input)
