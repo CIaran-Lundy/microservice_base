@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: custom-blastsearcher
+  labels:
+    app: custom-blastsearcher
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: custom-blastsearcher
+  template:
+    metadata:
+      labels:
+        app: custom-blastsearcher
+    spec:
+      containers:
+      - name: custom-blastsearcher
+        image: youseq/blastsearcher:v1.0.0
+        resources:
+          requests:
+            memory: "4Gi"
+        ports:
+        - containerPort: 80
+        env:
+        - name: NEXT_SERVICE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: qpcr-configmap
+              key: msaaligner_url
+        - name: FRONTEND_URL
+          valueFrom:
+            configMapKeyRef:
+              name: qpcr-configmap
+              key: frontend_url
+        - name: POD_TYPE
+          value: custom
+        volumeMounts:
+        - name: nt-volume
+          mountPath: /home/ciaran/nt
+      volumes:
+      - name: nt-volume
+        persistentVolumeClaim:
+          claimName: nt-pvc
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: custom-blastsearcher-service
+spec:
+  selector:
+    app: custom-blastsearcher
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80

@@ -1,0 +1,91 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: clusterservice
+  labels:
+    app: clusterservice
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: clusterservice
+  template:
+    metadata:
+      labels:
+        app: clusterservice
+    spec:
+      containers:
+      - name: clusterservice
+        image: youseq/clusterservice:v1.0.0
+        imagePullPolicy: Always
+        #resources:
+        #  requests:
+        #    memory: "1Gi"
+        #    cpu: "1000m"
+        ports:
+        - containerPort: 80
+        env:
+        - name: EXCHANGE_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: qpcr-configmap
+              key: exchange_name
+        - name: RABBITMQ_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: qpcr-configmap
+              key: rabbitmq_host
+        - name: RABBITMQ_USER
+          valueFrom:
+            configMapKeyRef:
+              name: qpcr-configmap
+              key: rabbitmq_user
+        - name: RABBITMQ_PASSWORD
+          valueFrom:
+            configMapKeyRef:
+              name: qpcr-configmap
+              key: rabbitmq_password
+        - name: RABBITMQ_LISTEN_QUEUE
+          value: clusterservice
+        - name: NEXT_SERVICE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: qpcr-configmap
+              key: priorityq_url
+        - name: FRONTEND_URL
+          valueFrom:
+            configMapKeyRef:
+              name: qpcr-configmap
+              key: frontend_url
+        volumeMounts:
+        - name: nt-volume
+          mountPath: /home/ciaran/nt
+      volumes:
+      - name: nt-volume
+        persistentVolumeClaim:
+          claimName: nt-pvc
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: clusterservice-service
+spec:
+  selector:
+    app: clusterservice
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
+---
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: clusterservice-vpa
+spec:
+  targetRef:
+    apiVersion: "apps/v1"
+    kind: Deployment
+    name: clusterservice
+  updatePolicy: 
+    updateMode:  Recreate

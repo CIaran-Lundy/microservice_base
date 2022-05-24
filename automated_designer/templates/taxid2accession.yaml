@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: taxid2accession
+  labels:
+    app: taxid2accession
+spec:
+  selector:
+    matchLabels:
+      app: taxid2accession
+  template:
+    metadata:
+      labels:
+        app: taxid2accession
+    spec:
+      containers:
+      - name: taxid2accession
+        image: youseq/taxid2accession:latest
+        ports:
+        - containerPort: 80
+        env:
+        - name: NEXT_SERVICE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: qpcr-configmap
+              key: priorityq_url
+        - name: FRONTEND_URL
+          valueFrom:
+            configMapKeyRef:
+              name: qpcr-configmap
+              key: frontend_url
+        volumeMounts:
+        - name: nt-volume
+          mountPath: /home/ciaran/nt/
+      volumes:
+      - name: nt-volume
+        persistentVolumeClaim:
+          claimName: nt-pvc
+
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: taxid2accession-service
+spec:
+  selector:
+    app: taxid2accession
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
+

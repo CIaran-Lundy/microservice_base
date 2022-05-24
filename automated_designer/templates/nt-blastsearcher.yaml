@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nt-blastsearcher
+  labels:
+    app: nt-blastsearcher
+spec:
+  replicas: 6
+  selector:
+    matchLabels:
+      app: nt-blastsearcher
+  template:
+    metadata:
+      labels:
+        app: nt-blastsearcher
+    spec:
+      containers:
+      - name: nt-blastsearcher
+        image: youseq/blastsearcher:v1.0.0
+        imagePullPolicy: Always
+        resources:
+          requests:
+            memory: "5Gi"
+        ports:
+        - containerPort: 80
+        env:
+        - name: NEXT_SERVICE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: qpcr-configmap
+              key: msaaligner_url
+        - name: FRONTEND_URL
+          valueFrom:
+            configMapKeyRef:
+              name: qpcr-configmap
+              key: frontend_url
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_TYPE
+          value: nt
+        - name: NUMBER_OF_REPLICAS
+          value: "8"
+        volumeMounts:
+        - name: nt-volume
+          mountPath: /home/ciaran/nt
+      volumes:
+      - name: nt-volume
+        persistentVolumeClaim:
+          claimName: nt-pvc
+          #      nodeSelector:
+          #blastnode: "True"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nt-blastsearcher-service
+spec:
+  selector:
+    app: nt-blastsearcher
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80

@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: name2taxid
+  labels:
+    app: name2taxid
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: name2taxid
+  template:
+    metadata:
+      labels:
+        app: name2taxid
+    spec:
+      containers:
+      - name: name2taxid
+        image: youseq/name2taxid:latest
+        ports:
+        - containerPort: 80
+        env:
+        - name: NEXT_SERVICE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: qpcr-configmap
+              key: taxid2accession_url
+        - name: FRONTEND_URL
+          valueFrom:
+            configMapKeyRef:
+              name: qpcr-configmap
+              key: frontend_url
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: name2taxid-service
+spec:
+  selector:
+    app: name2taxid
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
