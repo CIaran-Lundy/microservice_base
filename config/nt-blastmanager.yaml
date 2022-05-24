@@ -1,35 +1,42 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: msaaligner
+  name: nt-blastmanager
   labels:
-    app: msaaligner
+    app: nt-blastmanager
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: msaaligner
+      app: nt-blastmanager
   template:
     metadata:
       labels:
-        app: msaaligner
+        app: nt-blastmanager
     spec:
       containers:
-      - name: msaaligner
-        image: youseq/msa_aligner:latest
+      - name: nt-blastmanager
+        image: youseq/blastmanager3:latest
+        #resources:
+                #requests:
+                  #memory: "1000Mi"
+            #cpu: "1000m"
         ports:
         - containerPort: 80
         env:
-        - name: NEXT_SERVICE_URL
-          valueFrom:
-            configMapKeyRef:
-              name: qpcr-configmap
-              key: includesexcludes_url
         - name: FRONTEND_URL
           valueFrom:
             configMapKeyRef:
               name: qpcr-configmap
               key: frontend_url
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: NUMBER_OF_REPLICAS
+          value: "1"
+        - name: POD_TYPE
+          value: nt
         volumeMounts:
         - name: nt-volume
           mountPath: /home/ciaran/nt
@@ -43,10 +50,10 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: msaaligner-service
+  name: nt-blastmanager-service
 spec:
   selector:
-    app: msaaligner
+    app: nt-blastmanager
   ports:
   - protocol: TCP
     port: 80

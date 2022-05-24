@@ -26,13 +26,20 @@ spec:
               name: qpcr-configmap
               key: msaaligner_url
         volumeMounts:
-        - name: pathways-file
-          mountPath: /pathways/pathways.json
+        - name: nt-volume
+          mountPath: /home/ciaran/nt
+          #        - name: pathways-file
+          #mountPath: /pathways/pathways.json
       volumes:
-      - name: pathways-file
-        hostPath:
-          path: /home/ciaran/qpcr_service/pathways.json
-          type: File
+#      - name: pathways-file
+#        hostPath:
+#          path: /home/ciaran/qpcr_service/pathways.json
+#          type: File
+      - name: nt-volume
+        persistentVolumeClaim:
+          claimName: nt-pvc
+
+
 
 ---
 apiVersion: v1
@@ -60,3 +67,15 @@ spec:
       port: 8001
       targetPort: 80
       nodePort: 30000
+---
+#apiVersion: autoscaling.k8s.io/v1
+#kind: VerticalPodAutoscaler
+#metadata:
+#  name: fronend-vpa
+#spec:
+#  targetRef:
+#    apiVersion: "apps/v1"
+#    kind: Deployment
+#    name: frontend
+#  updatePolicy:
+#    updateMode:  Initial

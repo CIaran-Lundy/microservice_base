@@ -1,22 +1,25 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: complexity
+  name: custom-blastsearcher
   labels:
-    app: complexity
+    app: custom-blastsearcher
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: complexity
+      app: custom-blastsearcher
   template:
     metadata:
       labels:
-        app: complexity
+        app: custom-blastsearcher
     spec:
       containers:
-      - name: complexity
-        image: youseq/complexity:latest
+      - name: custom-blastsearcher
+        image: youseq/blastsearcher:latest
+        resources:
+          requests:
+            memory: "4Gi"
         ports:
         - containerPort: 80
         env:
@@ -24,33 +27,31 @@ spec:
           valueFrom:
             configMapKeyRef:
               name: qpcr-configmap
-              key: priorityq_url
+              key: msaaligner_url
         - name: FRONTEND_URL
           valueFrom:
             configMapKeyRef:
               name: qpcr-configmap
               key: frontend_url
+        - name: POD_TYPE
+          value: custom
+        volumeMounts:
+        - name: nt-volume
+          mountPath: /home/ciaran/nt
+      volumes:
+      - name: nt-volume
+        persistentVolumeClaim:
+          claimName: nt-pvc
+
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: complexity-service
+  name: custom-blastsearcher-service
 spec:
   selector:
-    app: complexity
+    app: custom-blastsearcher
   ports:
   - protocol: TCP
     port: 80
     targetPort: 80
----
-apiVersion: autoscaling.k8s.io/v1
-kind: VerticalPodAutoscaler
-metadata:
-  name: complexity-vpa
-spec:
-  targetRef:
-    apiVersion: "apps/v1"
-    kind: Deployment
-    name: complexity
-  updatePolicy:
-    updateMode:  Recreate
