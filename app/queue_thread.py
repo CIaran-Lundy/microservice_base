@@ -120,9 +120,14 @@ class RabbitMQThread(threading.Thread):
         body = json.loads(b64decode(body))
         print(body)
         print(type(body))
-        publish_queue = body['pathway'][0]
+        if properties.reply_to:
+            publish_exchange = reply_to['exchange']
+            publish_queue = reply_to['queue']
+        else:
+            publish_exchange = ''
+            publish_queue = body['pathway'][0]
         output = self.process(body)
-        self.publish(output, publish_queue)
+        self.publish(output, publish_exchange, publish_queue)
 
     def process(self, input):
 
@@ -139,11 +144,11 @@ class RabbitMQThread(threading.Thread):
             #pass
             return output
         else:
-            print(status)
+            print(status_update['status'])
             log_response = requests.post(self.FRONT_END_URL, json=service.get_status_update())
             return None
 
-    def publish(self, output, publish_queue):
+    def publish(self, output, publish_exchange, publish_queue):
         params = pika.ConnectionParameters(
             host=self.__rabbitmq_host,
             port=5672,
@@ -165,7 +170,9 @@ class RabbitMQThread(threading.Thread):
             #auto_delete=False
         )
 
-        channel.basic_publish(exchange='', routing_key=publish_queue, body=b64encode(json.dumps(output).encode()))
+        channel.basic_publish(exchange=publish_exchange,
+                              routing_key=publish_queue,
+                              body=b64encode(json.dumps(output).encode()))
 
     def get_q_size(self):
         # ...
@@ -287,3 +294,4 @@ class SequentialQueueThread(threading.Thread):
 
     def stop(self):
         self._stop_event.set()
+
