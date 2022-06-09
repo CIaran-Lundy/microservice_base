@@ -19,11 +19,13 @@ import os
 from base64 import b64encode, b64decode
 import json
 import threading
+from threading import Barrier
 import os
 import pika
 from service import Input, Service
 from functools import wraps
 import ast
+
 
 class RabbitBody:
     fibo: int
@@ -42,32 +44,96 @@ class RabbitBody:
         return RabbitBody(fibo)
 
 
-class Decorators:
-    @classmethod
-    def __rabbitmq_connector(cls, decorated_function):
-        @wraps(decorated_function)
-        def get_channel(*args, **kwargs):
+class RabbitMQPublish:
+    """
+    RabbitMQ operations
+    """
 
-            exchange_name = os.environ.get("EXCHANGE_NAME")
-            rabbitmq_host = os.environ.get("RABBITMQ_HOST")
-            rabbitmq_user = os.environ.get("RABBITMQ_USER")
-            rabbitmq_password = os.environ.get("RABBITMQ_PASSWORD")
+    def __init__(self, publish_function):
+        """
+        Initializes the class
+        """
+        self.publish_function = publish_function
+        self._barrier = Barrier(2, timeout=120)
+        self.__exchange_name = os.environ.get("EXCHANGE_NAME")
+        self.__rabbitmq_host = os.environ.get("RABBITMQ_HOST")
+        self.__rabbitmq_user = os.environ.get("RABBITMQ_USER")
+        self.__rabbitmq_password = os.environ.get("RABBITMQ_PASSWORD")
+        self.__params = pika.ConnectionParameters(
+            host=self.__rabbitmq_host,
+            port=5672,
+            credentials=pika.credentials.PlainCredentials(username=self.__rabbitmq_user,
+                                                          password=self.__rabbitmq_password),
+            heartbeat=600
+        )
+        print('RabbitMQPublish init complete')
 
-            params = pika.ConnectionParameters(
-                host=rabbitmq_host,
-                port=5672,
-                credentials=pika.credentials.PlainCredentials(username=rabbitmq_user,
-                                                              password=rabbitmq_password),
-            )
-            # Open a connection to RabbitMQ on localhost using all default parameters
-            connection = pika.BlockingConnection(parameters=params)
-            channel = connection.channel()
-            try:
-                decorated_function(channel, *args, **kwarg)
-            except Exception as e:
-                print(e)
+    def __call__(self, *args, **kwargs):
+        print('RabbitMQ call running')
+        print(f"args: {args}, kwargs: {kwargs}")
 
-        return get_channel(*args, **kwargs)
+        self.output = args[0]
+        self.publish_exchange = args[1]
+        self.publish_queue = args[2]
+        print(f"got kwargs: \n 1. output {self.output} \n 2. publish_exchange {self.publish_exchange} \n 3. publish_queue {self.publish_queue}")
+        self.run()
+
+    def connection_callback(self, conn):
+        """
+        Run on connecting to the server
+
+        :param conn: The connection created in the previous step
+        """
+        print('connection_callback')
+        self._connection.channel(on_open_callback=self.channel_callback)
+
+    def channel_callback(self, ch):
+        """
+        Publish to the channel. You can use other methods with callbacks but only the channel
+        creation method provides a channel. Other methods provide a frame you can choose to
+        discard.
+
+        :param ch: The channel established
+        """
+        print('channel_callback')
+        self.publish_function(ch, self.output, self.publish_exchange, self.publish_queue)
+        print('publish function done')
+        #self._barrier.wait(timeout=1)
+        ch.close()
+        #self._connection.close()
+
+    def run(self):
+        """
+        Runs the example
+        """
+        def run_io_loop(conn):
+            conn.ioloop.start()
+
+        self._connection = pika.SelectConnection(
+            self.__params, on_open_callback=self.connection_callback)
+        if self._connection:
+            print("got connection")
+            #self._connection.ioloop.start()
+            t = threading.Thread(target=run_io_loop, args=(self._connection, ))
+            t.start()
+            #self._barrier.wait(timeout=60)
+            #self._connection.ioloop.stop()
+        else:
+            raise ValueError
+
+    def consumer(self):
+        """
+        Run the example.
+        """
+
+        self._connection = AsyncioConnection(parameters=self.__params,
+                                             on_open_callback=self.open_connection_callback,
+                                             #on_open_error_callback=self.open_connection_error_callback,
+                                             #on_close_callback=self.close_connection_callback
+                                             )
+        if self._connection:
+            self._connection.ioloop.run_forever()
+            return self._closing
 
 
 class RabbitMQThread(threading.Thread):
@@ -121,10 +187,11 @@ class RabbitMQThread(threading.Thread):
         print(body)
         print(type(body))
         if properties.reply_to:
-            publish_exchange = reply_to['exchange']
-            publish_queue = reply_to['queue']
-        else:
+            #publish_exchange = properties.reply_to['exchange']
             publish_exchange = ''
+            publish_queue = properties.reply_to
+        else:
+            publish_exchange = self.__exchange_name
             publish_queue = body['pathway'][0]
         output = self.process(body)
         self.publish(output, publish_exchange, publish_queue)
@@ -148,20 +215,10 @@ class RabbitMQThread(threading.Thread):
             log_response = requests.post(self.FRONT_END_URL, json=service.get_status_update())
             return None
 
-    def publish(self, output, publish_exchange, publish_queue):
-        params = pika.ConnectionParameters(
-            host=self.__rabbitmq_host,
-            port=5672,
-            credentials=pika.credentials.PlainCredentials(username=self.__rabbitmq_user,
-                                                          password=self.__rabbitmq_password),
-        )
-
-        # Open a connection to RabbitMQ on localhost using all default parameters
-        connection = pika.BlockingConnection(parameters=params)
-
-        # Open the channel
-        channel = connection.channel()
-
+    @staticmethod
+    @RabbitMQPublish
+    def publish(channel, output, publish_exchange, publish_queue):
+        print("publish function")
         # Declare the queue
         channel.queue_declare(
             queue=publish_queue,
@@ -169,10 +226,21 @@ class RabbitMQThread(threading.Thread):
             exclusive=False,
             #auto_delete=False
         )
-
-        channel.basic_publish(exchange=publish_exchange,
-                              routing_key=publish_queue,
-                              body=b64encode(json.dumps(output).encode()))
+        _barrier = Barrier(2, timeout=120)
+        print("queue declared")
+        if isinstance(output, list):
+            print('output is list')
+            properties = pika.BasicProperties(content_type='application/json')
+            for item in output:
+                print(item)
+                channel.basic_publish(exchange='', #publish_exchange,
+                                      routing_key=publish_queue,
+                                      properties=properties,
+                                      body=b64encode(json.dumps(item).encode()))
+                #_barrier.wait(timeout=6)
+                print('item pushed')
+        else:
+            print('output not list')
 
     def get_q_size(self):
         # ...
@@ -192,9 +260,8 @@ class RabbitMQThread(threading.Thread):
         """
         a function that runs consume
         """
-        while not self._stop_event.isSet():
-
-            self.consume()
+        #while not self._stop_event.isSet():
+        self.consume()
 
     def stop(self):
         self._stop_event.set()
