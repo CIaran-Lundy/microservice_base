@@ -150,24 +150,69 @@ class RabbitMQThread(threading.Thread):
         self.__rabbitmq_host = os.environ.get("RABBITMQ_HOST")
         self.__rabbitmq_user = os.environ.get("RABBITMQ_USER")
         self.__rabbitmq_password = os.environ.get("RABBITMQ_PASSWORD")
-        self.__rabbitmq_listen_queue = os.environ.get("RABBITMQ_LISTEN_QUEUE")
-        print(self.__rabbitmq_listen_queue)
-        print(type(self.__rabbitmq_listen_queue))
         self._stop_event = threading.Event()
-
-    def consume(self):
-
-        params = pika.ConnectionParameters(
+        self.__params = pika.ConnectionParameters(
             host=self.__rabbitmq_host,
             port=5672,
+            heartbeat=600,
             credentials=pika.credentials.PlainCredentials(username=self.__rabbitmq_user,
                                                           password=self.__rabbitmq_password),
         )
+        self._connection = pika.BlockingConnection(self.__params)
+        self.__rabbitmq_listen_queue = self.get_queue(os.environ.get("RABBITMQ_LISTEN_QUEUE"))
 
-        # Open a connection to RabbitMQ on localhost using all default parameters
-        connection = pika.BlockingConnection(parameters=params)
+    @staticmethod
+    def __connection_callback():
+        print("connection established")
 
-        channel = connection.channel()
+    def get_queue(self, listen_queue):
+        print("getting listen queue")
+        self._connection = pika.BlockingConnection(
+            self.__params)
+
+        self.queue_channel = self._connection.channel()
+
+        self.queue_channel.queue_declare(
+            queue='current-designs',
+            durable=True,
+            exclusive=False,
+        )
+
+        self.queue_channel.basic_consume(queue='current-designs',
+                                         on_message_callback=self.read_current_designs_queue,
+                                         auto_ack=False)
+
+        #print(' [*] Waiting for messages. To exit press CTRL+C')
+        self.queue_channel.start_consuming()
+        print(f'listening to {self.__rabbitmq_listen_queue}')
+        return self.__rabbitmq_listen_queue
+
+    def read_current_designs_queue(self, ch, method, properties, body):
+        print(" [x] Received %r" % body)
+        body = json.loads(b64decode(body))
+        design_target = body['design_target']
+
+        channel = self._connection.channel()
+
+        print(f'checking {os.environ.get("RABBITMQ_LISTEN_QUEUE")}-{design_target}')
+        declared_queue = channel.queue_declare(
+            queue=f'{os.environ.get("RABBITMQ_LISTEN_QUEUE")}-{design_target}',
+            durable=True,
+            exclusive=False,
+            passive=True
+            # auto_delete=False
+        )
+        try:
+            if declared_queue.method.consumer_count == 0:
+                self.__rabbitmq_listen_queue = f'{os.environ.get("RABBITMQ_LISTEN_QUEUE")}-{design_target}'
+                self.design_target = design_target
+                self.queue_channel.stop_consuming()
+        except Exception as e:
+            print(e)
+
+    def consume(self):
+
+        channel = self._connection.channel()
 
         channel.queue_declare(
             queue=self.__rabbitmq_listen_queue,
@@ -192,7 +237,7 @@ class RabbitMQThread(threading.Thread):
             publish_queue = properties.reply_to
         else:
             publish_exchange = self.__exchange_name
-            publish_queue = body['pathway'][0]
+            publish_queue = f"{body['pathway'][0]}-{self.design_target}"
         output = self.process(body)
         self.publish(output, publish_exchange, publish_queue)
 
