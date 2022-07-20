@@ -41,49 +41,6 @@ rabbitmq_host = os.environ.get("RABBITMQ_HOST")
 rabbitmq_user = os.environ.get("RABBITMQ_USER")
 rabbitmq_password = os.environ.get("RABBITMQ_PASSWORD")
 
-#async def consume():
-
-#    exchange_name = os.environ.get("EXCHANGE_NAME")
-#    rabbitmq_host = os.environ.get("RABBITMQ_HOST")
-#    rabbitmq_user = os.environ.get("RABBITMQ_USER")
-#    rabbitmq_password = os.environ.get("RABBITMQ_PASSWORD")
-
-#    connection = await aiormq.connect(f"amqp://{rabbitmq_user}:{rabbitmq_password}@{rabbitmq_host}/")
-#    channel = await connection.channel()
-
-    #await channel.basic_qos(prefetch_count=1)
-
-    #await channel.exchange_declare(
-    #    exchange=exchange_name, exchange_type='direct'
-    #)
-
-    #declare = await channel.queue_declare(durable=True, auto_delete=True)
-    #await channel.queue_bind(declare.queue, exchange_name, routing_key='clusterservice')
-
-    #await channel.basic_consume(declare.queue, SequentialQueueThread.process)
-
-    #print("I DID SOMETHING!")
-
-#def main():
-#    credentials = pika.PlainCredentials(username=rabbitmq_user, password=rabbitmq_password)
-#    connection = pika.BlockingConnection(pika.ConnectionParameters(host=rabbitmq_host, credentials=credentials))
-#    channel = connection.channel()#
-
-#    channel.queue_declare(queue='clusterservice')
-
-#    def callback(ch, method, properties, body):
-#        print(" [x] Received %r" % body)
-#        print(" [x] Done")
-#        ch.basic_ack(delivery_tag=method.delivery_tag)
-
-#    channel.basic_consume(queue='clusterservice', on_message_callback=callback, auto_ack=True)
-
-#    print(' [*] Waiting for messages. To exit press CTRL+C')
-#    channel.start_consuming()
-
-
-#if __name__ == '__main__':
-#    main()
 
 class RabbitBody:
     fibo: int
@@ -196,8 +153,10 @@ def process(input: Input):
     return output
 
 
-#@app.kill("/kill/")
-#def kill(design_id):
+#kill_list = []
+#@app.post("/kill/")
+#def kill(input):
+#    design_id = input['design_id']
 #    global kill_list
 #    kill_list.append(design_id)
 #    return HTMLResponse(content="ready", status_code=200)
