@@ -20,6 +20,28 @@ spec:
         ports:
         - containerPort: 80
         env:
+        - name: EXCHANGE_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: qpcr-configmap
+              key: exchange_name
+        - name: RABBITMQ_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: qpcr-configmap
+              key: rabbitmq_host
+        - name: RABBITMQ_USER
+          valueFrom:
+            configMapKeyRef:
+              name: qpcr-configmap
+              key: rabbitmq_user
+        - name: RABBITMQ_PASSWORD
+          valueFrom:
+            configMapKeyRef:
+              name: qpcr-configmap
+              key: rabbitmq_password
+        - name: RABBITMQ_LISTEN_QUEUE
+          value: windowgen
         - name: NEXT_SERVICE_URL
           valueFrom:
             configMapKeyRef:
@@ -30,6 +52,12 @@ spec:
             configMapKeyRef:
               name: qpcr-configmap
               key: frontend_url
+        - name: NT_FILE
+          valueFrom:
+            configMapKeyRef:
+              name: qpcr-configmap
+              key: nt_filename
+
         volumeMounts:
         - name: nt-volume
           mountPath: /home/ciaran/nt
@@ -37,7 +65,6 @@ spec:
       - name: nt-volume
         persistentVolumeClaim:
           claimName: nt-pvc
-
 ---
 apiVersion: v1
 kind: Service
@@ -50,4 +77,16 @@ spec:
   - protocol: TCP
     port: 80
     targetPort: 80
+---
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: windowgen-vpa
+spec:
+  targetRef:
+    apiVersion: "apps/v1"
+    kind: Deployment
+    name: windowgen
+  updatePolicy:
+    updateMode:  Recreate
 

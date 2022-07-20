@@ -15,11 +15,33 @@ spec:
         app: kitselector
     spec:
       containers:
-      - name: pdd
+      - name: kitselector
         image: youseq/kitselector:latest
         ports:
         - containerPort: 80
         env:
+        - name: EXCHANGE_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: qpcr-configmap
+              key: exchange_name
+        - name: RABBITMQ_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: qpcr-configmap
+              key: rabbitmq_host
+        - name: RABBITMQ_USER
+          valueFrom:
+            configMapKeyRef:
+              name: qpcr-configmap
+              key: rabbitmq_user
+        - name: RABBITMQ_PASSWORD
+          valueFrom:
+            configMapKeyRef:
+              name: qpcr-configmap
+              key: rabbitmq_password
+        - name: RABBITMQ_LISTEN_QUEUE
+          value: kitselector
         - name: NEXT_SERVICE_URL
           valueFrom:
             configMapKeyRef:
@@ -30,6 +52,14 @@ spec:
             configMapKeyRef:
               name: qpcr-configmap
               key: frontend_url
+        volumeMounts:
+        - name: nt-volume
+          mountPath: /home/ciaran/nt
+      volumes:
+      - name: nt-volume
+        persistentVolumeClaim:
+          claimName: nt-pvc
+
 ---
 apiVersion: v1
 kind: Service

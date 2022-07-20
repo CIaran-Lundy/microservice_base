@@ -1,22 +1,26 @@
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
-  name: includesexcludes
+  name: nt-blastsearcher
   labels:
-    app: includesexcludes
+    app: nt-blastsearcher
 spec:
-  replicas: 1
+  serviceName: "nt-blastsearcher"
+  replicas: 6
   selector:
     matchLabels:
-      app: includesexcludes
+      app: nt-blastsearcher
   template:
     metadata:
       labels:
-        app: includesexcludes
+        app: nt-blastsearcher
     spec:
       containers:
-      - name: includesexcludes
-        image: youseq/includesexcludes:latest
+      - name: nt-blastsearcher
+        image: youseq/blastsearcher:latest
+        resources:
+          requests:
+            memory: "5Gi"
         ports:
         - containerPort: 80
         env:
@@ -40,28 +44,47 @@ spec:
             configMapKeyRef:
               name: qpcr-configmap
               key: rabbitmq_password
-        - name: RABBITMQ_LISTEN_QUEUE
-          value: includesexcludes
         - name: NEXT_SERVICE_URL
           valueFrom:
             configMapKeyRef:
               name: qpcr-configmap
-              key: pdd_url
+              key: msaaligner_url
         - name: FRONTEND_URL
           valueFrom:
             configMapKeyRef:
               name: qpcr-configmap
               key: frontend_url
+        - name: RABBITMQ_LISTEN_QUEUE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_TYPE
+          value: nt
+        - name: NUMBER_OF_REPLICAS
+          value: "8"
+        volumeMounts:
+        - name: nt-volume
+          mountPath: /home/ciaran/nt
+      volumes:
+      - name: nt-volume
+        persistentVolumeClaim:
+          claimName: nt-pvc
+          #      nodeSelector:
+          #blastnode: "True"
+
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: includesexcludes-service
+  name: nt-blastsearcher-service
 spec:
   selector:
-    app: includesexcludes
+    app: nt-blastsearcher
   ports:
   - protocol: TCP
     port: 80
     targetPort: 80
-

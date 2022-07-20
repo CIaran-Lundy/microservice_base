@@ -1,21 +1,22 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: taxid2accession
+  name: name2taxid
   labels:
-    app: taxid2accession
+    app: name2taxid
 spec:
+  replicas: 1
   selector:
     matchLabels:
-      app: taxid2accession
+      app: name2taxid
   template:
     metadata:
       labels:
-        app: taxid2accession
+        app: name2taxid
     spec:
       containers:
-      - name: taxid2accession
-        image: youseq/taxid2accession:latest
+      - name: name2taxid
+        image: youseq/name2taxid:latest
         ports:
         - containerPort: 80
         env:
@@ -23,31 +24,36 @@ spec:
           valueFrom:
             configMapKeyRef:
               name: qpcr-configmap
-              key: priorityq_url
-        - name: FRONTEND_URL
+              key: taxid2accession_url
+        - name: FRONT_END_URL
           valueFrom:
             configMapKeyRef:
               name: qpcr-configmap
               key: frontend_url
-        volumeMounts:
-        - name: nt-volume
-          mountPath: /home/ciaran/nt/
-      volumes:
-      - name: nt-volume
-        persistentVolumeClaim:
-          claimName: nt-pvc
-
-
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: taxid2accession-service
+  name: name2taxid-service
 spec:
   selector:
-    app: taxid2accession
+    app: name2taxid
   ports:
   - protocol: TCP
-    port: 80
+    port: 8002
     targetPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: name-external-service
+spec:
+  type: NodePort
+  selector:
+    app: name2taxid
+  ports:
+    - protocol: TCP
+      port: 8003
+      targetPort: 80
+      nodePort: 30001
 

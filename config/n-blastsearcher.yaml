@@ -1,21 +1,26 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: taxid2accession
+  name: custom-blastsearcher
   labels:
-    app: taxid2accession
+    app: custom-blastsearcher
 spec:
+  serviceName: "nt-blastsearcher-service"
+  replicas: 3
   selector:
     matchLabels:
-      app: taxid2accession
+      app: custom-blastsearcher
   template:
     metadata:
       labels:
-        app: taxid2accession
+        app: custom-blastsearcher
     spec:
       containers:
-      - name: taxid2accession
-        image: youseq/taxid2accession:latest
+      - name: custom-blastsearcher
+        image: youseq/blastsearcher:latest
+        resources:
+          requests:
+            memory: "4Gi"
         ports:
         - containerPort: 80
         env:
@@ -23,31 +28,34 @@ spec:
           valueFrom:
             configMapKeyRef:
               name: qpcr-configmap
-              key: priorityq_url
+              key: msaaligner_url
         - name: FRONTEND_URL
           valueFrom:
             configMapKeyRef:
               name: qpcr-configmap
               key: frontend_url
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: NUMBER_OF_REPLICAS
         volumeMounts:
         - name: nt-volume
-          mountPath: /home/ciaran/nt/
+          mountPath: /home/ciaran/nt
       volumes:
       - name: nt-volume
         persistentVolumeClaim:
           claimName: nt-pvc
 
-
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: taxid2accession-service
+  name: custom-blastsearcher-service
 spec:
   selector:
-    app: taxid2accession
+    app: custom-blastsearcher
   ports:
   - protocol: TCP
     port: 80
     targetPort: 80
-

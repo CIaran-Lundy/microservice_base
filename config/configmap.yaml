@@ -9,8 +9,13 @@ data:
   priorityq_url: priorityq-service
   windowgen_url: windowgen-service
   complexity_url: complexity-service
-  blastsearcher_url: blastsearcher-service
+  blastsearcher_url: family-blastsearcher-service
   msaaligner_url: msaaligner-service
   includesexcludes_url: includesexcludes-service
   pdd_url: pdd-service
   kitselector_url: kitselector-service
+  nt_filename: /home/ciaran/nt/nt/FASTA/nt
+  exchange_name: qpcr_design_tool
+  rabbitmq_host: rabbitmq-cluster 
+  rabbitmq_user: default_user_PyLEU3fLk_jyIMG5X2J
+  rabbitmq_password: ufYFzg2E1Okhe-rRd3wEW9ZzL4SFvzD8 

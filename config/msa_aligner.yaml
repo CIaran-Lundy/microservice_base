@@ -5,7 +5,7 @@ metadata:
   labels:
     app: msaaligner
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: msaaligner
@@ -20,6 +20,28 @@ spec:
         ports:
         - containerPort: 80
         env:
+        - name: EXCHANGE_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: qpcr-configmap
+              key: exchange_name
+        - name: RABBITMQ_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: qpcr-configmap
+              key: rabbitmq_host
+        - name: RABBITMQ_USER
+          valueFrom:
+            configMapKeyRef:
+              name: qpcr-configmap
+              key: rabbitmq_user
+        - name: RABBITMQ_PASSWORD
+          valueFrom:
+            configMapKeyRef:
+              name: qpcr-configmap
+              key: rabbitmq_password
+        - name: RABBITMQ_LISTEN_QUEUE
+          value: msa_aligner
         - name: NEXT_SERVICE_URL
           valueFrom:
             configMapKeyRef:

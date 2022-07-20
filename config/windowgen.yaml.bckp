@@ -1,21 +1,22 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: taxid2accession
+  name: windowgen
   labels:
-    app: taxid2accession
+    app: windowgen 
 spec:
+  replicas: 1
   selector:
     matchLabels:
-      app: taxid2accession
+      app: windowgen
   template:
     metadata:
       labels:
-        app: taxid2accession
+        app: windowgen
     spec:
       containers:
-      - name: taxid2accession
-        image: youseq/taxid2accession:latest
+      - name: windowgen
+        image: youseq/windowgen:latest
         ports:
         - containerPort: 80
         env:
@@ -31,21 +32,23 @@ spec:
               key: frontend_url
         volumeMounts:
         - name: nt-volume
-          mountPath: /home/ciaran/nt/
+          mountPath: /home/ciaran/nt/nt/FASTA/
       volumes:
-      - name: nt-volume
-        persistentVolumeClaim:
-          claimName: nt-pvc
-
-
+        - name: nt-volume
+          iscsi:
+            targetPortal: 10.0.7.1:3260
+            iqn: iqn.2004-04.com.qnap:ts-453d:iscsi.mammatus.49132e
+            lun: 0
+            fsType: ext4
+            readOnly: true
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: taxid2accession-service
+  name: windowgen-service
 spec:
   selector:
-    app: taxid2accession
+    app: windowgen
   ports:
   - protocol: TCP
     port: 80

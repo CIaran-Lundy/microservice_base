@@ -1,0 +1,6 @@
+kind: Node
+apiVersion: v1
+metadata:
+  name: jackie-weaver
+  labels:
+    name: jackie-weaver

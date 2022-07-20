@@ -1,22 +1,22 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: includesexcludes
+  name: alignmentfilter
   labels:
-    app: includesexcludes
+    app: alignmentfilter
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: includesexcludes
+      app: alignmentfilter
   template:
     metadata:
       labels:
-        app: includesexcludes
+        app: alignmentfilter
     spec:
       containers:
-      - name: includesexcludes
-        image: youseq/includesexcludes:latest
+      - name: alignmentfilter
+        image: youseq/alignment_filter:latest
         ports:
         - containerPort: 80
         env:
@@ -41,27 +41,39 @@ spec:
               name: qpcr-configmap
               key: rabbitmq_password
         - name: RABBITMQ_LISTEN_QUEUE
-          value: includesexcludes
+          value: alignmentfilter
         - name: NEXT_SERVICE_URL
           valueFrom:
             configMapKeyRef:
               name: qpcr-configmap
-              key: pdd_url
+              key: priorityq_url
         - name: FRONTEND_URL
           valueFrom:
             configMapKeyRef:
               name: qpcr-configmap
               key: frontend_url
+        - name: NT_FILE
+          valueFrom:
+            configMapKeyRef:
+              name: qpcr-configmap
+              key: nt_filename
+
+        volumeMounts:
+        - name: nt-volume
+          mountPath: /home/ciaran/nt
+      volumes:
+      - name: nt-volume
+        persistentVolumeClaim:
+          claimName: nt-pvc
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: includesexcludes-service
+  name: alignmentfilter-service
 spec:
   selector:
-    app: includesexcludes
+    app: alignmentfilter
   ports:
   - protocol: TCP
     port: 80
     targetPort: 80
-
