@@ -241,8 +241,8 @@ class RabbitMQConnection(object):
 
             try:
                 self._connection = self.get_connection()
-                self.kill = self._connection.ioloop.call_later(60, self.stop)
-                self._connection.ioloop.call_later(30, self.__check_queue_exists)
+                self.kill = self._connection.ioloop.call_later(180, self.stop)
+                self._connection.ioloop.call_later(120, self.__check_queue_exists)
                 self._connection.ioloop.start()
 
             except KeyboardInterrupt:
@@ -320,7 +320,11 @@ class RabbitMQThread(threading.Thread):
         if self.__rabbitmq_listen_queue is None:
             print('no listen queue established')
             try:
-                self.check_for_consumers(design_target)
+                consumer_check_thread = threading.Thread(self.check_for_consumers(design_target))
+                consumer_check_thread.start()
+                time.sleep(2)
+                consumer_check_thread.join(2)
+                print(self.__rabbitmq_listen_queue)
                 self.design_target = design_target
             except ValueError:
                 pass
@@ -360,10 +364,12 @@ class RabbitMQThread(threading.Thread):
             #self.design_target = design_target
             return self.__rabbitmq_listen_queue
         else:
-            #self.channel.close()
-            #self.channel = None
+        #    #self.channel.close()
+        #    #self.channel = None
             print('this queue already has a consumer')
-            raise ValueError
+            self.channel.close()
+            self.channel = None
+            #raise ValueError
         #except Exception as e:
         #    print(e)
 
@@ -399,7 +405,7 @@ class RabbitMQThread(threading.Thread):
             publish_queue = f"{body['pathway'][0]}-{self.design_target}"
         output = self.process(body)
         #design_still_running = self.check_current_designs()
-        self.publish(ch, output, publish_exchange, publish_queue)
+        self.publish(output, publish_exchange, publish_queue)
 
     def process(self, input):
         print('processing')
@@ -430,7 +436,8 @@ class RabbitMQThread(threading.Thread):
             print(f'log response is {log_response}')
             return None
 
-    def publish(self, channel, output, publish_exchange, publish_queue):
+    @RabbitMQConnection
+    def publish(self, output, publish_exchange, publish_queue, channel=None):
         print("publish function")
         # Declare the queue
         #channel.queue_declare(
@@ -447,14 +454,20 @@ class RabbitMQThread(threading.Thread):
             properties = pika.BasicProperties(content_type='application/json')
             for item in output:
                 print(item)
+                if 'priority' in item.keys():
+                    properties = pika.BasicProperties(priority=item['priority'],
+                                                      content_type='application/json')
                 channel.basic_publish(exchange='', #publish_exchange,
                                       routing_key=publish_queue,
                                       properties=properties,
                                       body=b64encode(json.dumps(item).encode()))
                 #_barrier.wait(timeout=6)
                 print(f'item pushed to: {publish_queue}')
+
         else:
             print('output not list')
+
+        channel.close()
 
     def get_q_size(self):
         # ...
