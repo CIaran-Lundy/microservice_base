@@ -51,6 +51,7 @@ class RabbitMQConnection(object):
         self.__rabbitmq_host = os.environ.get("RABBITMQ_HOST")
         self.__rabbitmq_user = os.environ.get("RABBITMQ_USER")
         self.__rabbitmq_password = os.environ.get("RABBITMQ_PASSWORD")
+        self.kill = None
 
         self.__credentials = pika.credentials.PlainCredentials(
             username=self.__rabbitmq_user,
@@ -184,7 +185,15 @@ class RabbitMQConnection(object):
 
     def __on_channel_open(self, channel):
         self.add_on_channel_close_callback(channel)
+        if self.kill:
+            self._connection.ioloop.remove_timeout(self.kill)
+            print('queue check suspended')
+        else:
+            print('no active queue check')
         self.decorated_function(*self.args, channel=channel)
+        self.kill = self._connection.ioloop.call_later(180, self.stop)
+        self.queue_check = self._connection.ioloop.call_later(120, self.__check_queue_exists)
+        print('queue check resumed')
 
     def add_on_channel_close_callback(self, channel):
         """This method tells pika to call the on_channel_closed method if
@@ -207,6 +216,7 @@ class RabbitMQConnection(object):
         self._connection.ioloop.stop()
 
     def __check_queue_exists(self):
+        print("checking queue exists")
         self._connection.channel(on_open_callback=self.__check_queue_exists_channel_open)
 
     def __check_queue_exists_channel_open(self, channel):
@@ -214,6 +224,7 @@ class RabbitMQConnection(object):
         print(self.args)
         print(self.args[1])
         queue = self.args[1]
+        self.channel = channel
         queue_declare = channel.queue_declare(
             callback=self.__queue_exists_callback,
             queue=queue,
@@ -225,6 +236,7 @@ class RabbitMQConnection(object):
         self._connection.ioloop.remove_timeout(self.kill)
         self.kill = self._connection.ioloop.call_later(60, self.stop)
         self._connection.ioloop.call_later(30, self.__check_queue_exists)
+        self.channel.close()
 
     def stop(self):
         print('kill was never cancelled by queue existing')
@@ -233,7 +245,8 @@ class RabbitMQConnection(object):
         self._connection.ioloop.stop()
 
     def run(self):
-        """open the connection and then start the IOLoop.
+        """
+        open the connection and then start the IOLoop.
         """
         print('RabbbitMQConnection starting')
         while not self._stopping:
@@ -241,8 +254,6 @@ class RabbitMQConnection(object):
 
             try:
                 self._connection = self.get_connection()
-                self.kill = self._connection.ioloop.call_later(180, self.stop)
-                self._connection.ioloop.call_later(120, self.__check_queue_exists)
                 self._connection.ioloop.start()
 
             except KeyboardInterrupt:
@@ -385,7 +396,7 @@ class RabbitMQThread(threading.Thread):
             #auto_delete=False
         )
 
-        channel.basic_consume(queue=queue, on_message_callback=self.callback, auto_ack=True)
+        channel.basic_consume(queue=queue, on_message_callback=self.callback, auto_ack=False)
 
         print(' [*] Waiting for messages. To exit press CTRL+C')
         #channel.start_consuming()
@@ -406,6 +417,7 @@ class RabbitMQThread(threading.Thread):
         output = self.process(body)
         #design_still_running = self.check_current_designs()
         self.publish(output, publish_exchange, publish_queue)
+        ch.basic_ack(method.delivery_tag)
 
     def process(self, input):
         print('processing')
