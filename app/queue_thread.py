@@ -26,6 +26,20 @@ from service import Input, Service
 from functools import wraps
 import ast
 import time
+import logging
+
+
+pod_name = os.environ.get("POD_NAME")
+
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[
+        logging.FileHandler(filename=f'{pod_name}.log'),
+        logging.StreamHandler()
+    ]
+)
 
 
 class RabbitMQConnection(object):
@@ -67,24 +81,23 @@ class RabbitMQConnection(object):
         self._connection = None
         self._channel = None
 
-        print('RabbitMQConnection init complete')
+        logging.info('RabbitMQConnection init complete')
 
     def __call__(self, *args, **kwargs):
-        print("connection called")
+        logging.info("RabbitMQConnection called")
         self._stopping = False
         self._closing = False
         self._connection = None
         self._channel = None
-        print(self)
-        print(args)
-        print(kwargs)
+        logging.debug(f"RabbitMQConnection called with args: {args}")
+        logging.debug(f"RabbitMQConnection called with kwargs: {kwargs}")
         self.args = args
         #self.rabbitmq_thread_instance = args[0]
         self.run()
-        print("run finished")
+        logging.info("run finished")
         self._stopping = False
         self._closing = False
-        print('self._stopping reset')
+        logging.debug('self._stopping reset')
         # output = self.get_channel(self.decorated_function(*args, **kwargs))
         # return output
 
@@ -109,7 +122,7 @@ class RabbitMQConnection(object):
         Run on connecting to the server
         :param conn: The connection created in the previous step
         """
-        print(f'connection created at {id(conn)}')
+        logging.info(f'connection created at {id(conn)}')
         self.get_channel()
 
     def __connection_open_error_callback(self, conn, exception):
@@ -118,35 +131,35 @@ class RabbitMQConnection(object):
         :param conn: The connection created in the previous step
         :param exception: The exception describing the failure
         """
-        print('connection_open_error_callback')
-        print(f'failed to create new connection at {id(conn)} due to {type(exception)}')
+        logging.warning('connection_open_error_callback')
+        logging.warning(f'failed to create new connection at {id(conn)} due to {type(exception)}')
         if self._closing:
             self._connection.ioloop.stop()
         else:
-            print(f'retrying')
+            logging.info(f'retrying')
             self._connection.ioloop.stop()
-            print('old loop stopped')
+            logging.info('old loop stopped')
             self._stopping = False
             self._closing = False
-            print('starting new loop')
+            logging.info('starting new loop')
             self.run()
 
     def __unexpected_close_connection_callback(self, conn, message):
 
         if self._closing:
-            print('expected close')
+            logging.info('expected close')
             self._connection.ioloop.stop()
         else:
-            print('unexpected_close_connection_callback')
-            print(f'failed to create new connection at {id(conn)} due to {message}')
-            print(f'retrying')
+            logging.warning('unexpected_close_connection_callback')
+            logging.warning(f'failed to create new connection at {id(conn)} due to {message}')
+            logging.info(f'retrying')
             #self._connection.add_timeout(5, self.reconnect)
             #self._connection.ioloop.call_later(5, self._connection.ioloop.stop)
             self._connection.ioloop.stop()
-            print('old loop stopped')
+            logging.info('old loop stopped')
             self._stopping = False
             self._closing = False
-            print('starting new loop')
+            logging.info('starting new loop')
             self.run()
 
     def reconnect(self):
@@ -154,13 +167,13 @@ class RabbitMQConnection(object):
         closed. See the on_connection_closed method.
 
         """
-        print("Reconnecting to broker")
+        logging.info("Reconnecting to broker")
 
         # This is the old connection IOLoop instance, stop its ioloop
         try:
             self._connection.ioloop.stop()
         except Exception as error:
-            print(f"Error stopping connection ioloop: {error}")
+            logging.error(f"Error stopping connection ioloop: {error}")
 
         # Create a new connection
         self._connection = self.connect()
@@ -169,7 +182,7 @@ class RabbitMQConnection(object):
             # There is now a new connection, needs a new ioloop to run
             self._connection.ioloop.start()
         except Exception as error:
-            print(f"Error starting connection ioloop: {error}")
+            logging.error(f"Error starting connection ioloop: {error}")
 
             self.on_open_error_callback(self._connection, "Problem reconecting to broker")
 
@@ -179,7 +192,7 @@ class RabbitMQConnection(object):
 
         :param conn: The connection created in the previous step
         """
-        print('channel created')
+        logging.info('channel created')
         #self._channel = self._connection.channel() # on_open_callback=channel_callback)
         self._connection.channel(on_open_callback=self.__on_channel_open)
 
@@ -187,13 +200,13 @@ class RabbitMQConnection(object):
         self.add_on_channel_close_callback(channel)
         if self.kill:
             self._connection.ioloop.remove_timeout(self.kill)
-            print('queue check suspended')
+            logging.info('queue check suspended')
         else:
-            print('no active queue check')
+            logging.info('no active queue check')
         self.decorated_function(*self.args, channel=channel)
         self.kill = self._connection.ioloop.call_later(180, self.stop)
         self.queue_check = self._connection.ioloop.call_later(120, self.__check_queue_exists)
-        print('queue check resumed')
+        logging.info('queue check resumed')
 
     def add_on_channel_close_callback(self, channel):
         """This method tells pika to call the on_channel_closed method if
@@ -216,13 +229,13 @@ class RabbitMQConnection(object):
         self._connection.ioloop.stop()
 
     def __check_queue_exists(self):
-        print("checking queue exists")
+        logging.info("checking queue exists")
         self._connection.channel(on_open_callback=self.__check_queue_exists_channel_open)
 
     def __check_queue_exists_channel_open(self, channel):
-        print("checking queue")
-        print(self.args)
-        print(self.args[1])
+        logging.info("checking queue")
+        logging.debug(self.args)
+        logging.debug(self.args[1])
         queue = self.args[1]
         self.channel = channel
         queue_declare = channel.queue_declare(
@@ -232,14 +245,14 @@ class RabbitMQConnection(object):
         )
 
     def __queue_exists_callback(self, queue_declare):
-        print(f'queue_declare {queue_declare}')
+        logging.info(f'queue_declare {queue_declare}')
         self._connection.ioloop.remove_timeout(self.kill)
         self.kill = self._connection.ioloop.call_later(60, self.stop)
         self._connection.ioloop.call_later(30, self.__check_queue_exists)
         self.channel.close()
 
     def stop(self):
-        print('kill was never cancelled by queue existing')
+        logging.warning('kill was never cancelled by queue existing')
         self._closing = True
         self._stopping = True
         self._connection.ioloop.stop()
@@ -248,7 +261,7 @@ class RabbitMQConnection(object):
         """
         open the connection and then start the IOLoop.
         """
-        print('RabbbitMQConnection starting')
+        logging.info('RabbbitMQConnection starting')
         while not self._stopping:
             self._connection = None
 
@@ -263,7 +276,7 @@ class RabbitMQConnection(object):
                     # Finish closing
                     self._connection.ioloop.start()
             except StopIteration:
-                print('stopping')
+                logging.info('stopping')
                 self._closing = True
                 self._stopping = True
                 #self.stop()
@@ -273,7 +286,7 @@ class RabbitMQConnection(object):
                 #    # Finish closing
                 #    self._connection.ioloop.start()
 
-        print('stopping')
+        logging.info('stopping')
         self._closing = True
         self._stopping = True
         self._connection.ioloop.stop()
@@ -292,56 +305,50 @@ class RabbitMQThread(threading.Thread):
             self.pod_type = os.environ.get("POD_TYPE")
         except:
             self.pod_type = None
-        print(f'pod_type: {self.pod_type}')
+        logging.info(f'pod_type: {self.pod_type}')
         self.__rabbitmq_listen_queue = None
         self.__exchange_name = '' #os.environ.get("EXCHANGE_NAME")
         self.FRONT_END_URL = f'http://{os.environ.get("FRONTEND_URL")}/log/'
-        print(f'frontend url is: {self.FRONT_END_URL}')
+        logging.info(f'frontend url is: {self.FRONT_END_URL}')
         if self.pod_type == 'nt':
             self.__rabbitmq_listen_queue = os.environ.get("RABBITMQ_LISTEN_QUEUE")
+            self.design_target = 'N/A'
         else:
-            #t = threading.Thread(target=self.get_queue, args=os.environ.get("RABBITMQ_LISTEN_QUEUE"))
-            #t.start()
-            #while not self.__rabbitmq_listen_queue:
-            #    print("waiting for listen queue")
             get_queue_call = self.get_queue(f'{os.environ.get("RABBITMQ_LISTEN_QUEUE")}-current-designs')
             get_queue_call = None
-            #    time.sleep(10)
-            print(f'listening to {self.__rabbitmq_listen_queue}')
+        print(f'listening to {self.__rabbitmq_listen_queue}')
+        self.first_call = True
 
     @RabbitMQConnection
     def get_queue(self, queue, channel=None):
-        print(channel)
-        print(type(channel))
-        print("getting listen queue")
-
-        #channel.basic_qos(prefetch_count=1)
+        logging.info(f'channel is {channel}')
+        logging.debug(type(channel))
+        logging.info("getting listen queue")
 
         channel.basic_consume(queue=queue,
                               on_message_callback=self.read_current_designs_queue,
                               auto_ack=False)
 
     def read_current_designs_queue(self, ch, method, properties, body):
-        print('get design name')
-        print(" [x] Received %r" % body)
+        logging.info('get design name')
+        logging.info(" [x] Received %r" % body)
         body = json.loads(b64decode(body))
         design_target = body['design_target']
-        #self.design_target = design_target
         ch.basic_nack(method.delivery_tag, requeue=True)
         if self.__rabbitmq_listen_queue is None:
-            print('no listen queue established')
+            logging.info('no listen queue established')
             try:
                 consumer_check_thread = threading.Thread(self.check_for_consumers(design_target))
                 consumer_check_thread.start()
                 time.sleep(2)
                 consumer_check_thread.join(2)
-                print(self.__rabbitmq_listen_queue)
+                logging.info(f'self.__rabbitmq_listen_queue is {self.__rabbitmq_listen_queue}')
                 self.design_target = design_target
             except ValueError:
                 pass
 
         else:
-            print('listen queue established, closing current designs queue')
+            logging.info('listen queue established, closing current designs queue')
             ch.close()
 
     @RabbitMQConnection
@@ -349,7 +356,7 @@ class RabbitMQThread(threading.Thread):
 
         self.channel = channel
 
-        print(f'checking {os.environ.get("RABBITMQ_LISTEN_QUEUE")}-{design_target}')
+        logging.info(f'checking {os.environ.get("RABBITMQ_LISTEN_QUEUE")}-{design_target}')
 
         self.channel.queue_declare(
             queue=f'{os.environ.get("RABBITMQ_LISTEN_QUEUE")}-{design_target}',
@@ -357,37 +364,25 @@ class RabbitMQThread(threading.Thread):
             exclusive=False,
             callback=self.on_queue_declareok
         )
-        print("done")
+        logging.info("done")
 
     def on_queue_declareok(self, declared_queue):
 
-        print(f'declared_queue: {declared_queue}')
+        logging.info(f'declared_queue: {declared_queue}')
 
-        #try:
         if declared_queue.method.consumer_count == 0:
-            print("found a queue with no consumer")
+            logging.info("found a queue with no consumer")
             self.__rabbitmq_listen_queue = declared_queue.method.queue
-            #RabbitMQConnection._stopping = True
-            #raise StopIteration
-            #RabbitMQConnection.close()
             self.channel.close()
             self.channel = None
-            #self.design_target = design_target
             return self.__rabbitmq_listen_queue
         else:
-        #    #self.channel.close()
-        #    #self.channel = None
-            print('this queue already has a consumer')
+            logging.info('this queue already has a consumer')
             self.channel.close()
             self.channel = None
-            #raise ValueError
-        #except Exception as e:
-        #    print(e)
 
     @RabbitMQConnection
     def consume(self, queue, channel=None):
-
-        #channel = self._connection.channel()
 
         channel.queue_declare(
             queue=queue,
@@ -398,14 +393,13 @@ class RabbitMQThread(threading.Thread):
 
         channel.basic_consume(queue=queue, on_message_callback=self.callback, auto_ack=False)
 
-        print(' [*] Waiting for messages. To exit press CTRL+C')
-        #channel.start_consuming()
+        logging.info(' [*] Waiting for messages. To exit press CTRL+C')
 
     def callback(self, ch, method, properties, body):
-        print(" [x] Received %r" % body)
+        logging.info(" [x] Received %r" % body)
         body = json.loads(b64decode(body))
-        print(body)
-        print(type(body))
+        logging.info(body)
+        logging.info(type(body))
         if properties.reply_to:
             #publish_exchange = properties.reply_to['exchange']
             print('reply to is set')
@@ -420,52 +414,39 @@ class RabbitMQThread(threading.Thread):
         ch.basic_ack(method.delivery_tag)
 
     def process(self, input):
-        print('processing')
+        logging.info('processing')
         service = Service(input)
         status_update = service.get_status_update()
-        if not self.pod_type == 'nt':
-            status_update['design_target'] = self.design_target
-            print(status_update)
+        #if not self.pod_type == 'nt':
+        status_update['design_target'] = self.design_target
+        logging.info(status_update)
+        if self.first_call:
             log_response = requests.post(self.FRONT_END_URL, json=status_update)
-            print(f'log response is {log_response}')
+            logging.info(f'log response is {log_response}')
+            self.first_call = False
         output = service.run(input)
         status_update = service.get_status_update()
         if status_update['status'] == 'done':
-            #response = requests.post(NEXT_SERVICE_URL, json=output)
-            #loop = asyncio.get_event_loop()
-            #asyncio.run(self.push_to_rabbit(output))
-            #print("Sent")
-            #print(response)
-            #pass
             return output
         else:
-            if self.pod_type == 'nt':
-                self.design_target = self.design_id.split('.')[0]
-            status_update = service.get_status_update()
+            #if self.pod_type == 'nt':
+            #    self.design_target = self.design_id.split('.')[0]
+            #status_update = service.get_status_update()
             status_update['design_target'] = self.design_target
-            print(status_update['status'])
+            logging.info(status_update)
             log_response = requests.post(self.FRONT_END_URL, json=status_update)
-            print(f'log response is {log_response}')
+            logging.info(f'log response is {log_response}')
             return None
 
     @RabbitMQConnection
     def publish(self, output, publish_exchange, publish_queue, channel=None):
-        print("publish function")
-        # Declare the queue
-        #channel.queue_declare(
-        #    queue=publish_queue,
-        #    durable=True,
-        #    exclusive=False,
-        #    #auto_delete=False
-        #)
-
-        #_barrier = Barrier(2, timeout=120)
-        print("queue declared")
+        logging.info("publish function")
+        logging.info("queue declared")
         if isinstance(output, list):
-            print('output is list')
+            logging.info('output is list')
             properties = pika.BasicProperties(content_type='application/json')
             for item in output:
-                print(item)
+                logging.info(item)
                 if 'priority' in item.keys():
                     properties = pika.BasicProperties(priority=item['priority'],
                                                       content_type='application/json')
@@ -474,10 +455,10 @@ class RabbitMQThread(threading.Thread):
                                       properties=properties,
                                       body=b64encode(json.dumps(item).encode()))
                 #_barrier.wait(timeout=6)
-                print(f'item pushed to: {publish_queue}')
+                logging.info(f'item pushed to: {publish_queue}')
 
         else:
-            print('output not list')
+            logging.info('output not list')
 
         channel.close()
 
@@ -493,7 +474,7 @@ class RabbitMQThread(threading.Thread):
             #auto_delete=False,
             passive=True
         )
-        print(f'Messages in queue: {res.method.message_count}')
+        logging.info(f'Messages in queue: {res.method.message_count}')
 
     def run(self):
         """
@@ -501,19 +482,19 @@ class RabbitMQThread(threading.Thread):
         """
         #while not self._stop_event.isSet():
         self.consume(self.__rabbitmq_listen_queue)
-        print("rabbitmq thread has stopped completely")
+        logging.info("rabbitmq thread has stopped completely")
         self.restart()
 
     def restart(self):
-        print("restarting")
+        logging.info("restarting")
         if self.pod_type == 'nt':
             self.__rabbitmq_listen_queue = os.environ.get("RABBITMQ_LISTEN_QUEUE")
         else:
             self.__rabbitmq_listen_queue = None
             get_queue_call = self.get_queue(f'{os.environ.get("RABBITMQ_LISTEN_QUEUE")}-current-designs')
             get_queue_call = None
-            print(f'listening to {self.__rabbitmq_listen_queue}')
-            self.run()
+        logging.info(f'listening to {self.__rabbitmq_listen_queue}')
+        self.run()
 
     def stop(self):
         self._stop_event.set()
@@ -581,7 +562,7 @@ class SequentialQueueThread(threading.Thread):
     def process(self, input: Input):
         NEXT_SERVICE_URL = input.pathway[0]
         service = Service(input)
-        log_response = requests.post(self.FRONT_END_URL, json=service.get_status_update())
+        #log_response = requests.post(self.FRONT_END_URL, json=service.get_status_update())
         output = service.run(input)
         status_update = service.get_status_update()
         if status_update['status'] == 'done':
@@ -592,8 +573,8 @@ class SequentialQueueThread(threading.Thread):
             #print(response)
             #pass
         else:
-            print(status)
-            log_response = requests.post(self.FRONT_END_URL, json=service.get_status_update())
+            print(status_update['status'])
+        #    log_response = requests.post(self.FRONT_END_URL, json=service.get_status_update())
 
     def run(self):
         """
