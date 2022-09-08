@@ -1,52 +1,37 @@
-import asyncio
-import threading
-from pydantic import BaseModel
-from typing import Dict
-from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 import requests
-from service import Input
-from service import Service
 import asyncio
-import aiormq
-import json
-from base64 import b64encode, b64decode
-
-from aiormq.abc import DeliveredMessage
-import pika
-
-import os
 from base64 import b64encode, b64decode
 import json
 import threading
-from threading import Barrier
 import os
 import pika
 from service import Input, Service
-from functools import wraps
-import ast
 import time
 import logging
 
 
 pod_name = os.environ.get("POD_NAME")
 
+try:
+    pod_type = os.environ.get("POD_TYPE")
+except:
+    pod_type = None
+
 
 logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s",
-    handlers=[
+                    level=logging.INFO,
+                    format="%(asctime)s [%(levelname)s] %(message)s",
+                    handlers=[
         logging.FileHandler(filename=f'{pod_name}.log'),
         logging.StreamHandler()
-    ]
-)
+    ])
 
 
 class RabbitMQConnection(object):
     """
-    a class to manage all the rabbitMQConnection stuff.
-    should:
-    -> operate as a decorator
+    a class to manage connecting to rabbitMQ cluster.
+    -> operates as a decorator
     -> commands it decorates will:
         - have a queue they listen to
         - want a channel
@@ -55,6 +40,8 @@ class RabbitMQConnection(object):
     -> provide a channel
     -> check that the queue exists
     """
+
+
 
     def __init__(self, decorated_function):
         """
@@ -198,15 +185,16 @@ class RabbitMQConnection(object):
 
     def __on_channel_open(self, channel):
         self.add_on_channel_close_callback(channel)
-        if self.kill:
+        if self.kill is not None:
             self._connection.ioloop.remove_timeout(self.kill)
             logging.info('queue check suspended')
         else:
             logging.info('no active queue check')
         self.decorated_function(*self.args, channel=channel)
-        self.kill = self._connection.ioloop.call_later(180, self.stop)
-        self.queue_check = self._connection.ioloop.call_later(120, self.__check_queue_exists)
-        logging.info('queue check resumed')
+        if not pod_type == 'nt':
+            self.kill = self._connection.ioloop.call_later(180, self.stop)
+            self.queue_check = self._connection.ioloop.call_later(120, self.__check_queue_exists)
+            logging.info('queue check resumed')
 
     def add_on_channel_close_callback(self, channel):
         """This method tells pika to call the on_channel_closed method if
@@ -410,8 +398,9 @@ class RabbitMQThread(threading.Thread):
             publish_queue = f"{body['pathway'][0]}-{self.design_target}"
         output = self.process(body)
         #design_still_running = self.check_current_designs()
-        self.publish(output, publish_exchange, publish_queue)
         ch.basic_ack(method.delivery_tag)
+        self.publish(output, publish_exchange, publish_queue)
+     #   ch.basic_ack(method.delivery_tag)
 
     def process(self, input):
         logging.info('processing')
@@ -462,7 +451,7 @@ class RabbitMQThread(threading.Thread):
 
         channel.close()
 
-    def get_q_size(self):
+    def get_q_size(self, channel):
         # ...
 
         # Re-declare the queue with passive flag
