@@ -59,7 +59,7 @@ class RabbitBody:
         return RabbitBody(fibo)
 
 
-if __name__ == "__main__":
+if __name__ == "nonsense":
     import pika
 
     exchange_name = os.environ.get("EXCHANGE_NAME")
@@ -148,8 +148,9 @@ async def run(input: Input):
 
 @app.post("/run/")
 def process(input: Input):
-    service = Service(input)
-    output = service.run(input)
+    input_dict = input.dict()
+    service = Service(input_dict)
+    output = service.run(input_dict)
     return output
 
 
