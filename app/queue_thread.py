@@ -41,8 +41,6 @@ class RabbitMQConnection(object):
     -> check that the queue exists
     """
 
-
-
     def __init__(self, decorated_function):
         """
         Initializes the class
