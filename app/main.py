@@ -24,18 +24,21 @@ async def run(input: Input):
     global sequential_queue
     if sequential_queue.qsize() >= 10:
         return HTMLResponse(content="queue_full", status_code=429)
-    sequential_queue.put_nowait(input)
+    #input_dict = input.dict()
+    sequential_queue.put_nowait(input)#_dict)
+    print(sequential_queue.qsize())
     return HTMLResponse(content="ready", status_code=200)
 
 
 @app.post("/run/")
 def process(input: Input):
-    service = Service(input)
-    output = service.run(input)
+    input_dict = input.dict()
+    service = Service(input_dict)
+    output = service.run(input_dict)
     return output
 
 
-#@app.kill("/kill/")
+#@app.post("/kill/")
 #def kill(design_id):
 #    global kill_list
 #    kill_list.append(design_id)
@@ -43,10 +46,11 @@ def process(input: Input):
 
 
 if __name__ == "__main__":
-
+    print("l49")
     FRONT_END_URL = str("http://" + os.getenv("FRONTEND_URL") + "/log/")
-
+    print("l51")
     sequential_queue_thread = SequentialQueueThread(FRONT_END_URL=FRONT_END_URL, intake_q=sequential_queue)
+    print("l53")
     sequential_queue_thread.start()
-
-    kill_list = []
+    print("l55")
+    #kill_list = []

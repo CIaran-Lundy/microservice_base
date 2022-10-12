@@ -24,6 +24,7 @@ class SequentialQueueThread(threading.Thread):
         self.outlet_q = outlet_q
         self.FRONT_END_URL = FRONT_END_URL
         self._stop_event = threading.Event()
+        print("running")
 
     #class Input(BaseModel):
     #    design_id: str
@@ -32,15 +33,17 @@ class SequentialQueueThread(threading.Thread):
     #    metadata: Dict[str, list]
     #    pathway: list
 
-    async def intake(self, input: Input):
+    async def intake(self, input):
         """
         a function defining how to add items to the intake queue
         """
         self.intake_q.put_nowait(input)
         return HTMLResponse(content="ready", status_code=200)
 
-    def process(self, input: Input):
-        #NEXT_SERVICE_URL = input.pathway[0]
+    def process(self, input):
+        print("process running")
+        NEXT_SERVICE_URL = input['pathway'][0]
+        print(NEXT_SERVICE_URL)
         service = Service(input)
         log_response = requests.post(self.FRONT_END_URL, json=service.get_status_update())
         output = service.run(input)
@@ -48,7 +51,6 @@ class SequentialQueueThread(threading.Thread):
         if status_update['status'] == 'done':
             response = requests.post(NEXT_SERVICE_URL, json=output)
             print(response)
-        #pass
 
     def run(self):
         """
@@ -56,7 +58,9 @@ class SequentialQueueThread(threading.Thread):
         and if it is not empty, calls the process function.
         this should run in the class as a deamon thread.
         """
+        print("running")
         while not self._stop_event.isSet():
+
             if not self.intake_q.empty():
 
                 input = self.intake_q.get_nowait()
